@@ -35,8 +35,8 @@ let acheieved = {
 function percentage() {
 
   // 세포분열
-  acheieved.stat.failed = $(".card dt[failed]").length;
-  acheieved.stat.total = ($(".card dt").length - acheieved.stat.failed);
+  acheieved.stat.failed = $(".card:not(.guide) dt[failed]").length;
+  acheieved.stat.total = ($(".card:not(.guide) dt").length - acheieved.stat.failed);
   if (acheieved.stat.total + acheieved.stat.failed >= 1000) {
     $("#세포분열_1000").attr("checked", true);
   }
@@ -49,7 +49,7 @@ function percentage() {
 
   //재귀함수
   function checke_total() {
-    acheieved.stat.done = $(".card dt[checked]").length;
+    acheieved.stat.done = $(".card:not(.guide) dt[checked]").length;
     acheieved.stat.percentage = acheieved.stat.total ? (acheieved.stat.done / acheieved.stat.total * 100).toFixed(0) : 0;
     if (acheieved.stat.percentage >= 75) {
       $("#재귀함수_75").attr("checked", true);

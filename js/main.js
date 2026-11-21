@@ -553,6 +553,7 @@ function browser_alert() {
 function ajax() {
   $.ajax({
     url: "js/main__info.js",
+    dataType: "text", // 실행하지 않고 캐시만 데운다 (스크립트로 실행하면 두 번 선언된다)
     success: function(result) {
       //Do something with the result
     }

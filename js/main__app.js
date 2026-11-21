@@ -88,6 +88,7 @@ var BUCKET = (function () {
           '<dd>' + esc(it.d) + '<span class="date"></span></dd>' +
         '</dl>' +
         '<div class="back">' +
+          '<p class="back_title">' + esc(it.t) + '</p>' +
           '<p class="ach_back"><i class="material-icons">military_tech</i>업적 · ' + esc(it.a || "-") + '</p>' +
           (it.b ? '<p>' + esc(it.b) + '</p>' : '') +
           '<div class="acts">' +
@@ -136,6 +137,7 @@ var BUCKET = (function () {
     var $dt = $card.find("dt");
     if (done) $dt.attr("checked", "checked"); else $dt.removeAttr("checked");
     if (fail) $dt.attr("failed", "failed"); else $dt.removeAttr("failed");
+    $card.find("dt .tick").text(done ? "check_box" : (fail ? "flag" : "check_box_outline_blank"));
     $card.find("dd .date").text(done ? (state.done[id] || "") : "");
     $card.find(".ach").toggleClass("on", done);
     $card.find(".act[data-act=done] span").text(done ? "달성 해제" : "달성");
@@ -175,7 +177,7 @@ var BUCKET = (function () {
   }
 
   function headings() {
-    $("h1 .percentage, h2:not(nav h2) .percentage, h3:not(nav h3) .percentage").remove();
+    $("h2:not(nav h2) .percentage, h3:not(nav h3) .percentage").remove();
     $("h2:not(nav h2)").each(function () {
       var $sec = $(this).next("section.sup");
       if (!$sec.length) return;
@@ -282,7 +284,7 @@ var BUCKET = (function () {
       '</div>';
 
     $("#rank").html(html);
-    $("#rank_chip_text").text("Lv." + r.cur.lv + " " + r.cur.name);
+    $("#rank_chip_text").html("Lv." + r.cur.lv + " <span class='rk_chip_name'>" + esc(r.cur.name) + "</span>");
     $("#rank_chip").attr("title", r.next ? "다음 칭호 " + r.next.name + "까지 " + until + "개" : "최고 칭호");
   }
 
