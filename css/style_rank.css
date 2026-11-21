@@ -1,0 +1,676 @@
+/* 업적 칭호 · 전체 칭호(레벨) · 카드 관리 UI
+ *
+ * JinH 의 카드 디자인(css/style.css, style_card_v2.css) 위에 얹는 층입니다.
+ * 카드 한 장 = 버킷리스트 항목 하나, 카드마다 업적 칭호가 하나씩 붙습니다.
+ */
+
+/* ---------- 카드: 체크 표시와 업적 칭호 ---------- */
+
+/* 기본 템플릿의 dt:before 체크박스 대신, 누를 수 있는 .tick 아이콘을 쓴다. */
+.card.bitem dt:before {
+  content: none !important;
+  display: none !important;
+}
+
+.card.bitem dt {
+  display: flex;
+  align-items: baseline;
+  gap: .35em;
+}
+
+.card.bitem dt .tick {
+  font-size: 20px;
+  color: var(--color-400);
+  cursor: pointer;
+  flex: 0 0 auto;
+  transform: translateY(2px);
+  transition: .2s;
+}
+
+.card.bitem dt .tick:hover {
+  color: var(--color-600);
+  transform: translateY(2px) scale(1.12);
+}
+
+.card.bitem.is_done dt .tick {
+  color: var(--color-500);
+}
+
+.card.bitem .tt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 업적 칭호: 미달성 = 점선 실루엣, 달성 = 금색 인장처럼 채워진다. */
+.card .ach {
+  display: inline-flex;
+  align-items: center;
+  gap: .35em;
+  max-width: 100%;
+  margin: 0 0 .65em;
+  padding: 3px 8px 3px 5px;
+  border: 1px dashed rgba(0, 0, 0, .22);
+  border-radius: 2px;
+  background: rgba(0, 0, 0, .015);
+  color: rgba(0, 0, 0, .38);
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: color .25s, background .25s, border-color .25s, box-shadow .25s;
+}
+
+.card .ach:hover {
+  border-color: var(--color-400);
+  color: rgba(0, 0, 0, .6);
+}
+
+.card .ach .material-icons {
+  font-size: 15px;
+  opacity: .55;
+}
+
+.card .ach .ach_tag {
+  font-size: 9px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  opacity: .8;
+  border-right: 1px solid currentColor;
+  padding-right: .4em;
+}
+
+.card .ach .ach_name {
+  font-weight: 600;
+  letter-spacing: .02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card .ach.on {
+  color: #fff;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, var(--color-600), var(--color-500));
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255, 255, 255, .25);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .18);
+}
+
+.card .ach.on .material-icons {
+  opacity: .95;
+}
+
+.card.bitem.is_done .front {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .2), inset 3px 0 0 var(--color-500);
+}
+
+.card.bitem.is_fail .front {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .2), inset 3px 0 0 #e53935;
+}
+
+/* 카드 뒷면: 업적 한 줄 + 관리 버튼 */
+.card .back .ach_back {
+  font-size: .8em;
+  letter-spacing: .06em;
+  color: var(--color-600);
+  margin-bottom: .6em;
+}
+
+.card .back .ach_back .material-icons {
+  font-size: 15px;
+  vertical-align: -3px;
+  margin-right: .2em;
+}
+
+.card .acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4em;
+  margin-top: .9em;
+  padding-top: .7em;
+  border-top: 1px solid rgba(0, 0, 0, .07);
+}
+
+.card .act {
+  display: inline-flex;
+  align-items: center;
+  gap: .2em;
+  padding: .35em .7em;
+  border: 1px solid rgba(0, 0, 0, .16);
+  border-radius: 2px;
+  background: transparent;
+  color: rgba(0, 0, 0, .68);
+  font: inherit;
+  font-size: .8em;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.card .act .material-icons {
+  font-size: 16px;
+  opacity: .8;
+}
+
+.card .act:hover {
+  background: var(--color-50);
+  border-color: var(--color-400);
+  color: rgba(0, 0, 0, .9);
+}
+
+.card .act[data-act="del"]:hover {
+  color: #e53935;
+  border-color: #e53935;
+  background: rgba(229, 57, 53, .05);
+}
+
+.card.bitem.is_done .act[data-act="done"] {
+  border-color: var(--color-500);
+  color: var(--color-700);
+}
+
+/* ---------- 카테고리 칭호 (h2 옆) ---------- */
+
+h2 .cat_title {
+  display: inline-flex;
+  align-items: center;
+  gap: .2em;
+  margin-left: .6em;
+  padding: 2px 7px;
+  border: 1px dashed rgba(0, 0, 0, .2);
+  border-radius: 2px;
+  font-size: .45em;
+  font-weight: normal;
+  letter-spacing: .08em;
+  vertical-align: middle;
+  color: rgba(0, 0, 0, .3);
+  opacity: .75;
+}
+
+h2 .cat_title .material-icons {
+  font-size: 1.1em;
+  opacity: .7;
+}
+
+h2 .cat_title.on {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--color-600), var(--color-500));
+  opacity: 1;
+}
+
+nav .cat_title {
+  display: none !important;
+}
+
+/* ---------- 전체 칭호 카드 ---------- */
+
+#rank {
+  max-width: 600px;
+  margin: 0 auto 1em;
+}
+
+body:not(.columns) #rank {
+  max-width: calc(100% - 2em);
+}
+
+.rk_card {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* 필터(전체/달성/미달성/포기)를 걸어도 전체 칭호 카드는 남긴다. */
+.rk_card.hide {
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+.rk_head {
+  display: flex;
+  align-items: center;
+  gap: .9em;
+}
+
+.rk_lv {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  color: #fff;
+  background: var(--color-700);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .18), 0 2px 5px rgba(0, 0, 0, .2);
+}
+
+.rk_lv span {
+  font-size: 9px;
+  letter-spacing: .16em;
+  opacity: .85;
+}
+
+.rk_lv b {
+  font-family: 'Black Ops One', sans-serif;
+  font-size: 21px;
+  margin-top: 2px;
+}
+
+.rk_title {
+  font-size: 1.35em;
+  font-weight: 700;
+  color: var(--color-900);
+  line-height: 1.2;
+}
+
+.rk_note {
+  font-size: .8em;
+  color: rgba(0, 0, 0, .5);
+  margin-top: .15em;
+}
+
+.rk_count {
+  margin-left: auto;
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+.rk_count b {
+  font-size: 1.7em;
+  color: var(--color-700);
+  line-height: 1;
+}
+
+.rk_count span {
+  display: block;
+  font-size: .72em;
+  color: rgba(0, 0, 0, .45);
+}
+
+.rk_next {
+  margin-top: .9em;
+  font-size: .8em;
+  color: rgba(0, 0, 0, .55);
+}
+
+.rk_next .n {
+  color: var(--color-700);
+}
+
+.rk_bar {
+  height: 6px;
+  margin-top: .4em;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, .08);
+  overflow: hidden;
+}
+
+.rk_bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--color-500), var(--color-700));
+  transition: width .7s cubic-bezier(.2, .8, .2, 1);
+}
+
+.rk_ladder {
+  display: flex;
+  align-items: center;
+  gap: .35em;
+  margin-top: .8em;
+}
+
+.rk_ladder .pip {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  border: 1px solid rgba(0, 0, 0, .15);
+  color: rgba(0, 0, 0, .3);
+  cursor: default;
+}
+
+.rk_ladder .pip.done {
+  background: var(--color-500);
+  border-color: transparent;
+  color: #fff;
+}
+
+.rk_ladder .pip.now {
+  background: var(--color-700);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 0 0 3px var(--color-100);
+}
+
+.rk_ladder_label {
+  margin-left: auto;
+  font-size: 9px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, .3);
+}
+
+/* ---------- 상단 바: 칭호 배지, 관리 버튼 ---------- */
+
+#sub_header #rank_chip {
+  float: right;
+  display: inline-flex;
+  align-items: center;
+  gap: .3em;
+  padding: 16px 20px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, .9);
+  border-left: 1px solid rgba(255, 255, 255, .18);
+  cursor: pointer;
+  transition: .2s;
+}
+
+#sub_header #rank_chip:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, .08);
+}
+
+#sub_header #rank_chip .material-icons {
+  font-size: 18px;
+}
+
+#sub_header #manage_bt {
+  float: right;
+  padding: 16px 22px;
+  color: rgba(255, 255, 255, .78);
+  cursor: pointer;
+  transition: .2s;
+}
+
+#sub_header #manage_bt:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, .08);
+}
+
+/* ---------- 관리 패널 ---------- */
+
+#manage_bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, .45);
+  z-index: 7;
+  opacity: 0;
+  visibility: hidden;
+  transition: .25s;
+}
+
+#manage_bg.on {
+  opacity: 1;
+  visibility: visible;
+}
+
+#manage {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 430px;
+  max-width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0 0 3em;
+  background: #fff;
+  box-shadow: -4px 0 18px rgba(0, 0, 0, .22);
+  z-index: 8;
+  overflow-y: auto;
+  transform: translateX(102%);
+  transition: transform .28s cubic-bezier(.2, .8, .2, 1);
+  display: block;
+}
+
+#manage.on {
+  transform: translateX(0);
+}
+
+#manage .header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: .4em;
+  padding: 1em;
+  background: var(--color-700);
+  color: #fff;
+  font-size: 1.05em;
+}
+
+#manage .header .material-icons {
+  cursor: pointer;
+}
+
+#manage .setting_title {
+  padding: 1.1em 1em .2em;
+  font-size: .78em;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, .45);
+}
+
+#manage .m_row {
+  padding: .4em 1em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4em;
+  font-size: .88em;
+  color: rgba(0, 0, 0, .7);
+}
+
+#manage .m_big {
+  font-size: 1.4em;
+  font-weight: 700;
+  color: var(--color-700);
+}
+
+#manage button {
+  padding: .5em .8em;
+  border: 1px solid rgba(0, 0, 0, .18);
+  border-radius: 2px;
+  background: #fff;
+  color: rgba(0, 0, 0, .75);
+  font: inherit;
+  font-size: .85em;
+  cursor: pointer;
+  transition: .2s;
+}
+
+#manage button:hover {
+  background: var(--color-50);
+  border-color: var(--color-400);
+}
+
+#manage button.armed {
+  color: #e53935;
+  border-color: #e53935;
+  background: rgba(229, 57, 53, .06);
+}
+
+#manage .m_list {
+  list-style: none;
+  margin: .3em 0 0;
+  padding: 0 1em;
+}
+
+#manage .m_list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6em;
+  padding: .5em 0;
+  border-bottom: 1px solid rgba(0, 0, 0, .06);
+  font-size: .88em;
+  color: rgba(0, 0, 0, .72);
+}
+
+#manage .m_list li.m_empty {
+  color: rgba(0, 0, 0, .35);
+  font-style: italic;
+  border-bottom: none;
+}
+
+#manage .m_add input,
+#manage .m_add select {
+  display: block;
+  width: calc(100% - 2em);
+  margin: .35em 1em;
+  padding: .6em .7em;
+  border: 1px solid rgba(0, 0, 0, .16);
+  border-radius: 2px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  font-size: .9em;
+}
+
+#manage .m_add input:focus,
+#manage .m_add select:focus {
+  outline: none;
+  border-color: var(--color-500);
+}
+
+#manage .m_add button {
+  display: block;
+  width: calc(100% - 2em);
+  margin: .5em 1em 0;
+  background: var(--color-700);
+  border-color: transparent;
+  color: #fff;
+  font-size: .9em;
+  padding: .65em;
+}
+
+#manage .m_add button:hover {
+  background: var(--color-800);
+}
+
+#manage .m_note {
+  padding: 1em;
+  font-size: .75em;
+  color: rgba(0, 0, 0, .4);
+  line-height: 1.6;
+}
+
+/* ---------- 토스트의 되돌리기 ---------- */
+
+#toast .undo {
+  margin-left: 1em;
+  padding-bottom: 1px;
+  border-bottom: 1px solid rgba(255, 255, 255, .7);
+  color: #fff;
+  font-size: .9em;
+  letter-spacing: .04em;
+  cursor: pointer;
+}
+
+#toast .undo:hover {
+  color: var(--color-200);
+}
+
+/* ---------- 좁은 화면 ---------- */
+
+@media (max-width: 700px) {
+  #sub_header #rank_chip {
+    font-size: 12px;
+    padding: 16px 12px;
+  }
+
+  #sub_header #rank_chip .material-icons {
+    display: none;
+  }
+
+  #sub_header #manage_bt {
+    padding: 16px 14px;
+  }
+
+  .rk_count {
+    display: none;
+  }
+
+  h2 .cat_title {
+    display: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .card .ach {
+    border-color: rgba(255, 255, 255, .22);
+    background: rgba(255, 255, 255, .03);
+    color: rgba(255, 255, 255, .45);
+  }
+
+  .card .ach:hover {
+    color: rgba(255, 255, 255, .75);
+  }
+
+  .rk_title {
+    color: rgba(255, 255, 255, .9);
+  }
+
+  .rk_note,
+  .rk_next,
+  .rk_count span,
+  .rk_ladder_label {
+    color: rgba(255, 255, 255, .5);
+  }
+
+  .rk_count b,
+  .rk_next .n {
+    color: rgba(255, 255, 255, .9);
+  }
+
+  .rk_bar {
+    background: rgba(255, 255, 255, .12);
+  }
+
+  .rk_ladder .pip {
+    border-color: rgba(255, 255, 255, .25);
+    color: rgba(255, 255, 255, .4);
+  }
+
+  h2 .cat_title {
+    border-color: rgba(255, 255, 255, .22);
+    color: rgba(255, 255, 255, .45);
+  }
+
+  .card .act {
+    border-color: rgba(255, 255, 255, .22);
+    color: rgba(255, 255, 255, .7);
+  }
+
+  .card .act:hover {
+    background: rgba(255, 255, 255, .08);
+    color: #fff;
+  }
+
+  #manage {
+    background: #1f1f1f;
+    color: rgba(255, 255, 255, .7);
+  }
+
+  #manage .setting_title,
+  #manage .m_row,
+  #manage .m_list li,
+  #manage .m_note {
+    color: rgba(255, 255, 255, .55);
+  }
+
+  #manage button,
+  #manage .m_add input,
+  #manage .m_add select {
+    background: #2a2a2a;
+    border-color: rgba(255, 255, 255, .2);
+    color: rgba(255, 255, 255, .8);
+  }
+}

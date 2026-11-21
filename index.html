@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <title>규연의 버킷리스트</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#212121" />
+  <meta name="description" content="규연의 버킷리스트. 카드마다 업적 칭호가 붙는 플립 카드 버킷리스트." />
+  <meta property="og:title" content="규연의 버킷리스트" />
+  <meta property="og:description" content="BUCKET LIST by 규연 (@AESWDQ) — 126개의 퀘스트와 업적" />
+  <link rel="stylesheet" type="text/css" href="css/style.css">
+  <link rel="stylesheet" type="text/css" href="css/style_rank.css">
+  <link rel="stylesheet" type="text/css" href="css/style_dark.css">
+  <link rel="shortcut icon" href="img/favicon/favicon.ico">
+  <script src="js/jquery.min.js"></script>
+  <script defer src="js/sub__coloring.js"></script>
+  <script defer src="data/bucket.js"></script>
+  <script defer src="js/main__app.js"></script>
+  <script defer src="js/main__initialize.js"></script>
+  <script defer src="js/sub__masonry.pkgd.min.js"></script>
+  <script defer src="js/sub__clipboard.min.js"></script>
+  <script async src="js/sub__lazysizes.min.js"></script>
+  <link rel="manifest" href="manifest.json">
+</head>
+
+<body class="columns">
+  <header>
+    <h1>
+      <i id="nav_on" onclick="if($('nav').attr('class')!='on'){$('nav, #nav_bg').addClass('on');}else{$('nav, #nav_bg').removeClass('on');}" class="material-icons">menu</i>
+      Bucket List
+    </h1>
+  </header>
+  <div id="sub_header">
+    <div class="" id="line1">
+
+      <div class="filter_bt on" id="filter_11">
+        <i class="material-icons">indeterminate_check_box</i><span>전체</span>
+        <span class="ink_bar"></span>
+      </div>
+      <div class="filter_bt" id="filter_10">
+        <i class="material-icons">check_box</i><span>달성</span>
+        <span class="ink_bar"></span>
+      </div>
+      <div class="filter_bt" id="filter_01">
+        <i class="material-icons">check_box_outline_blank</i><span>미달성</span>
+        <span class="ink_bar"></span>
+      </div>
+      <div class="filter_bt" id="filter_00">
+        <i class="material-icons">priority_high</i><span>포기</span>
+        <span class="ink_bar"></span>
+      </div>
+
+      <div class="" id="column_bt">
+        <i class="material-icons">view_column</i>
+      </div>
+      <div id="manage_bt" title="항목 관리 · 삭제 되살리기 · 내보내기">
+        <i class="material-icons">tune</i>
+      </div>
+      <div id="rank_chip" title="전체 칭호">
+        <i class="material-icons">military_tech</i><span id="rank_chip_text">Lv.1 모험 입문자</span>
+      </div>
+    </div>
+  </div>
+  <nav>
+    <div id='nav'>
+
+      <div id='nav_header'>
+        <div id="to_github" class="" onclick="window.open('https://github.com/AESWDQ')">
+          <i class="material-icons"><svg style="width:24px;height:24px" viewBox="0 0 24 24">
+              <path
+                d="M4,2H20A2,2 0 0,1 22,4V20A2,2 0 0,1 20,22H14.85C14.5,21.92 14.5,21.24 14.5,21V18.26C14.5,17.33 14.17,16.72 13.81,16.41C16.04,16.16 18.38,15.32 18.38,11.5C18.38,10.39 18,9.5 17.35,8.79C17.45,8.54 17.8,7.5 17.25,6.15C17.25,6.15 16.41,5.88 14.5,7.17C13.71,6.95 12.85,6.84 12,6.84C11.15,6.84 10.29,6.95 9.5,7.17C7.59,5.88 6.75,6.15 6.75,6.15C6.2,7.5 6.55,8.54 6.65,8.79C6,9.5 5.62,10.39 5.62,11.5C5.62,15.31 7.95,16.17 10.17,16.42C9.89,16.67 9.63,17.11 9.54,17.76C8.97,18 7.5,18.45 6.63,16.93C6.63,16.93 6.1,15.97 5.1,15.9C5.1,15.9 4.12,15.88 5,16.5C5,16.5 5.68,16.81 6.14,17.97C6.14,17.97 6.73,19.91 9.5,19.31V21C9.5,21.24 9.5,21.92 9.14,22H4A2,2 0 0,1 2,20V4A2,2 0 0,1 4,2Z">
+              </path>
+            </svg></i><span>@AESWDQ</span>
+        </div>
+        <div id="setting_bt">
+          <i class="material-icons">settings</i>
+          <i class="material-icons setting_arrow">play_arrow</i>
+        </div>
+      </div>
+    </div>
+    <div id='nav_footer'><i class='material-icons'>chevron_left</i></div>
+  </nav>
+  <div id="nav_bg" onclick="$('nav, #nav_bg').removeClass('on');"></div>
+
+  <div id="splash">
+    <img src="img/favicon/icon__bucket.webp" alt="logo">
+    <div class="splash_title">규연의 버킷리스트</div>
+  </div>
+
+  <section id="first_class">
+
+    <div class="card">
+      <!-- 사용법 카드 -->
+      <dl class="front" id="버킷리스트">
+        <dt>읽는 법</dt>
+        <dd>카드를 뒤집고, 달성하고, 업적을 모으는 곳<span class="date"></span></dd>
+      </dl>
+      <div class="back">
+        <p>만들었다, 버킷리스트! 카드 위에 마우스를 올리면 뒤집히고, 이야기가 나옵니다.</p>
+        <p><b>달성</b>은 카드의 네모칸이나 업적 칭호를 누르면 됩니다. 카드 뒷면에서 <b>달성 · 포기 · 삭제</b>도 고를 수 있고, 지운 항목은 오른쪽 위 <b>관리</b>에서 되살릴 수 있습니다.</p>
+        <p>항목마다 업적 칭호가 하나씩 붙어 있습니다. 달성하면 회색 실루엣이 색으로 채워집니다. 위쪽 <b>Lv.</b> 배지는 달성 개수로 오르는 전체 칭호입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="rank"></section>
+
+  <section id="dashboard"></section>
+
+  <div id="contents"></div>
+
+  <footer>
+    <p class="copyright">© <span id="year"></span> 규연 (@AESWDQ)</p>
+    <p class="copyright" style="padding-top:0; font-size:.85em;">카드 디자인과 코드 원본: <a href="https://github.com/Admin0/bucket" target="_blank">BUCKET LIST by JinH</a></p>
+  </footer>
+
+  <div id="tooltip"> </div>
+
+  <section id="contextmenu">
+    <div id="for_copy" data-clipboard-target="#for_copy_output">
+      <i class="material-icons">content_copy</i>복사하기
+    </div>
+    <textarea class="output" id="for_copy_output"></textarea>
+  </section>
+  <!-- context-menu close -->
+
+  <!-- 관리 패널 -->
+  <div id="manage_bg" onclick="$('#manage, #manage_bg').removeClass('on');"></div>
+  <dl id="manage">
+    <div class="header">
+      <i class="material-icons" onclick="$('#manage, #manage_bg').removeClass('on');">arrow_back</i><span>관리</span>
+    </div>
+
+    <div class="setting_title">진행 상황</div>
+    <div class="m_row" id="m_summary"></div>
+
+    <div class="setting_title">삭제한 항목</div>
+    <div class="m_row"><button id="m_restore_all_bt">모두 되살리기</button></div>
+    <ul id="m_deleted" class="m_list"></ul>
+
+    <div class="setting_title">내가 추가한 항목</div>
+    <ul id="m_added" class="m_list"></ul>
+
+    <div class="setting_title">항목 추가</div>
+    <div class="m_add">
+      <select id="m_cat"></select>
+      <input id="m_t" placeholder="제목 · 예: 발리에서 서핑" />
+      <input id="m_d" placeholder="설명 한 줄 · 예: 파도 위에 서 보기" />
+      <input id="m_a" placeholder="업적 칭호 · 예: 파도의 주인" />
+      <button id="m_add_bt">추가하기</button>
+    </div>
+
+    <div class="setting_title">데이터</div>
+    <div class="m_row">
+      <button id="m_export">진행 상황 내보내기 (JSON)</button>
+      <button id="m_reset_prog">진행 초기화</button>
+    </div>
+    <p class="m_note">달성·삭제·추가 기록은 이 브라우저에만 저장됩니다. 기록을 옮기려면 내보내기를 쓰세요. 항목 자체를 늘리려면 data/bucket.js 를 고치면 됩니다.</p>
+  </dl>
+
+  <div id="browser_alert">
+    <div>
+      <p style="font-size:24px; font-weight:bold;">구형 브라우저 감지!</p>
+      <p>멋진 버킷리스트를 감상하기 위해서는 아래의 최신 브라우저로 접속하세요.</p>
+      <ul>
+        <li><a href="https://www.google.com/chrome" target="_blank">Chrome - by Google</a></li>
+        <li><a href="https://www.mozilla.org/ko/firefox/new/" target="_blank">Firefox - by Mozilla</a></li>
+      </ul>
+      <p><a onclick="$('#browser_alert').remove()">닫기</a></p>
+    </div>
+  </div>
+
+</body>
+
+</html>

@@ -1,0 +1,223 @@
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-track {
+    background-color: #212121;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-a100);
+    -webkit-box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  }
+
+  body {
+    background: #121212;
+  }
+
+  .card.front,
+  dl#setting,
+  .card .front,
+  .card .back {
+    color: rgba(255, 255, 255, .65);
+    background: #1f1f1f;
+  }
+
+  .card:hover .front,
+  .card:hover .back,
+  dl#setting,
+  .card.front:hover {
+    background: #2d2d2d;
+  }
+
+  .card.dashboard {
+    background: #2d2d2d;
+  }
+
+  .card dt:not(.card.on dt),
+  #setting dt,
+  #setting .setting_title,
+  h2,
+  h3,
+  nav h2 a {
+    color: rgba(255, 255, 255, .65);
+  }
+
+  .card dd:not(.card.on dd),
+  #setting dd,
+  .dashboard .subtitle,
+  #setting .setting_item.disabled>* {
+    color: rgba(255, 255, 255, .5);
+  }
+
+  .card .date {
+    color: inherit;
+    opacity: .7;
+  }
+
+  /* dashboard */
+  header,
+  .dashboard .value,
+  .dashboard #실적,
+  .card dt[checked]:not(.card.on dt),
+  #setting dt[checked],
+  nav h3 a,
+  .copyright {
+    color: rgba(255, 255, 255, .85);
+  }
+
+  nav h3.on a {
+    color: var(--color-200);
+  }
+
+  header {
+    background: rgb(66, 66, 66);
+  }
+
+  nav {
+    background: #1f1f1f;
+  }
+
+  nav #nav_header,
+  nav #nav_footer {
+    background: #2d2d2d;
+    color: rgba(255, 255, 255, .65);
+  }
+
+  dl .material-icons,
+  a:not(nav a),
+  #to_github,
+  #to_github i,
+  .dashboard .pin .material-icons {
+    color: var(--color-200);
+    fill: var(--color-200);
+  }
+
+  .card dt:not(.card.on dt):before,
+  #setting dt:before {
+    color: var(--color-200);
+    fill: var(--color-200);
+  }
+
+  #sub_header {
+    background: #2d2d2d;
+  }
+
+  #sub_header .filter_bt .ink_bar {
+    background: rgba(255, 255, 255, .85);
+  }
+
+  #sub_header .filter_bt.on,
+  #sub_header .filter_bt:hover,
+  #column_bt,
+  #column_bt:hover {
+    color: var(--color-200);
+  }
+
+  #sub_header .filter_bt:hover,
+  #column_bt:hover {
+    background: rgba(0, 0, 0, .65);
+  }
+
+  /* card on from scr anker value */
+  .card.on.front, .card .on.front, .card.on .front, .card.on .back {
+    background: var(--color-700);
+  }
+
+  .front.on:hover {
+    background: var(--color-500);
+  }
+
+  .front.on dt,
+  .front.on dt:before {
+    color: rgba(0, 0, 0, .95);
+    fill: rgba(0, 0, 0, .95);
+  }
+
+  .front.on dd {
+    color: rgba(0, 0, 0, .5);
+  }
+
+  /* ------------------------------------------------------------------- */
+  /* ***** tooltip ***** */
+  /* ------------------------------------------------------------------- */
+  @keyframes tooltip {
+    0% {
+      margin-top: .5em;
+    }
+
+    100% {
+      margin-top: 0;
+    }
+  }
+
+  @keyframes tooltip_nav {
+    0% {
+      margin-left: -.5em;
+    }
+
+    100% {
+      margin-left: 0;
+    }
+  }
+
+  #tooltip {
+    color: var(--color-dark-tooltip);
+    background: var(--color-a200);
+  }
+
+  #tooltip.nav {
+    position: fixed;
+    z-index: 5;
+  }
+
+  #tooltip:before {
+    border-color: var(--color-a200) transparent transparent;
+  }
+
+  #tooltip.nav:before {
+    border-color: transparent var(--color-a200) transparent transparent;
+  }
+
+  /* ------------------------------------------------------------------- */
+  /* ***** contextmenu ***** */
+  /* ------------------------------------------------------------------- */
+  #contextmenu {
+    background: #2d2d2d;
+    border-color: #555;
+    color: rgba(255, 255, 255, .85);
+  }
+
+  #contextmenu textarea {
+    color: rgba(255, 255, 255, .85);
+  }
+
+  /* ------------------------------------------------------------------- */
+  /* ***** splash ***** */
+  /* ------------------------------------------------------------------- */
+  div#splash {
+    background: #121212;
+  }
+
+  div#splash img {
+    top: calc(50% - 64px);
+    position: relative;
+    width: 128px;
+    height: 128px;
+  }
+
+  div#splash .splash_title {
+    top: calc(50% - 64px);
+    position: relative;
+    font-size: 1.25em;
+    font-weight: bold;
+    color: #aaa;
+  }
+}
+
+/* ------------------------------------------------------------------- */
+/* ***** mobile ***** */
+/* ------------------------------------------------------------------- */
+@media handheld,
+only screen and (max-width:880px) and (prefers-color-scheme: dark) {
+  #setting .header {
+    background: rgb(66, 66, 66);
+  }
+}

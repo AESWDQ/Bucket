@@ -1,0 +1,17 @@
+{
+  "name": "규연의 버킷리스트",
+  "short_name": "#bucket",
+  "icons": [
+    {
+      "src": "img/favicon/icon__bucket.webp",
+      "type": "image/webp",
+      "sizes": "any"
+    }
+  ],
+  "start_url": "./",
+  "scope": "./",
+  "id": "bucket-list",
+  "display": "standalone",
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff"
+}
