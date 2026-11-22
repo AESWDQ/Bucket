@@ -257,7 +257,7 @@ const bucket = {
         });
       });
 
-      $("img").on("click", function() { //이미지를 클릭하면 크게 보이는 고얌
+      $("img:not(.shot_img)").on("click", function() { //이미지를 클릭하면 크게 보이는 고얌
         showImg($(this).attr("src"));
       });
 

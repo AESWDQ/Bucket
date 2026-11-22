@@ -90,15 +90,30 @@ body:not(.columns) section.sub .card.front {
 .card:hover .front,
 .card:hover .back {
   box-shadow: 0 5px 12px rgb(0 0 0 / 20%);
-  z-index: 2;
 }
 
-.card:hover .front {
+/* 카드를 누르면 뒤집힌다 (.flipped 는 js/main__app.js 가 붙이고 뗀다).
+ * 예전에는 마우스를 올리면 뒤집혔지만, 이제는 눌러야 뒤집혀서 뒷면의 사진·메모를
+ * 계속 보고 쓸 수 있다. */
+.card.flipped .front {
   transform: rotateX(-180deg);
 }
 
-.card:hover .back {
+.card.flipped .back {
   transform: rotateX(0);
+}
+
+.card.flipped {
+  z-index: 3;
+}
+
+/* 보이지 않는 반대쪽 면이 클릭을 가로채지 않게 한다 (뒷면은 카드보다 길 수 있다). */
+.card:not(.flipped) .back {
+  pointer-events: none;
+}
+
+.card.flipped .front {
+  pointer-events: none;
 }
 
 .card dl dl,
@@ -237,23 +252,13 @@ body:not(.columns) section.sub .card.front {
   z-index: 3;
 }
 
-@keyframes unhover {
-  0% {
-    z-index: 2;
-  }
-
-  99% {
-    z-index: 2;
-  }
-
-  100% {
-    z-index: 1;
-  }
+/* 뒤집힌 카드는 뒤집혀 있는 동안 위에 남는다 (아래 카드를 덮지 않도록 높이도 함께 늘린다). */
+.card.flipped {
+  z-index: 3;
 }
 
-.card:not(:hover) {
-  animation-name: unhover;
-  animation-duration: .5s;
+.card .back>.bin {
+  margin: 0 !important;
 }
 
 .card .back>:not(img) {

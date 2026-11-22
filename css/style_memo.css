@@ -1,0 +1,454 @@
+/* 카드 뒷면: 사진 · 메모
+ *
+ * 카드를 누르면 뒤집혀 뒷면이 보입니다 (뒤집기는 css/style_card_v2.css 의 .card.flipped).
+ * 이 파일은 뒷면 안쪽 배치와 사진·메모 입력칸, 앞면의 작은 표시만 담당합니다.
+ */
+
+/* ---------- 앞면: 사진·메모가 있는 카드 표시 ---------- */
+
+/* 뒤집히는 속도는 클릭에 어울리게 조금 빠르게 (원본은 .75s). */
+.card .front,
+.card .back {
+  transition: transform .6s cubic-bezier(.25, .8, .3, 1), box-shadow .45s, background-color .45s;
+}
+
+.card.bitem .front {
+  position: relative;
+}
+
+.card.bitem dt .tt {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.card.bitem .marks {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  flex: 0 0 auto;
+  align-self: center;
+  margin-left: auto;
+  color: var(--color-500);
+}
+
+.card.bitem .marks .material-icons {
+  display: none;
+  font-size: 15px;
+  margin: 0;
+  opacity: .85;
+}
+
+.card.bitem.has_photo .marks .m_photo,
+.card.bitem.has_memo .marks .m_memo {
+  display: inline-block;
+}
+
+.card.bitem {
+  cursor: pointer;
+}
+
+/* ---------- 뒷면 배치 ---------- */
+
+.card.bitem .back {
+  cursor: pointer;
+}
+
+.card.bitem .back>.bin {
+  display: flex;
+  flex-direction: column;
+  gap: .7em;
+  padding: 1em;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.card.bitem .back>.bin *,
+.card.bitem .back>.bin *:before,
+.card.bitem .back>.bin *:after {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.card.bitem .back .b_head {
+  display: flex;
+  align-items: flex-start;
+  gap: .5em;
+}
+
+.card.bitem .back .back_title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+
+.b_head .b_flip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7em;
+  height: 1.7em;
+  margin: -.2em -.2em 0 auto;
+  border-radius: 50%;
+  color: rgba(0, 0, 0, .38);
+  cursor: pointer;
+  transition: .2s;
+}
+
+.b_head .b_flip .material-icons {
+  font-size: 18px;
+  margin: 0;
+}
+
+.b_head .b_flip:hover {
+  background: rgba(0, 0, 0, .06);
+  color: rgba(0, 0, 0, .75);
+}
+
+.card.bitem .back .ach_back {
+  margin: 0;
+}
+
+.card.bitem .back .b_desc {
+  margin: 0;
+  font-size: .92em;
+  line-height: 1.55;
+  color: rgba(0, 0, 0, .62);
+}
+
+/* ---------- 사진 ---------- */
+
+.card.bitem .shot {
+  position: relative;
+  border: 1px dashed rgba(0, 0, 0, .14);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, .025);
+  overflow: hidden;
+}
+
+.card.bitem .shot.has {
+  border-style: solid;
+  border-color: transparent;
+  background: #111;
+}
+
+.card.bitem .shot .shot_img {
+  display: none;
+  width: 100%;
+  max-height: 300px;
+  object-fit: cover;
+  opacity: 1 !important;
+  cursor: zoom-in;
+}
+
+.card.bitem .shot.has .shot_img {
+  display: block;
+}
+
+.card.bitem .shot .shot_empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .1em;
+  padding: 1.15em .8em;
+  color: rgba(0, 0, 0, .4);
+  text-align: center;
+  cursor: pointer;
+  transition: background .2s, color .2s;
+}
+
+.card.bitem .shot .shot_empty:hover {
+  background: rgba(0, 0, 0, .03);
+  color: rgba(0, 0, 0, .62);
+}
+
+.card.bitem .shot .shot_empty .material-icons {
+  font-size: 26px;
+  margin: 0 0 .1em;
+  opacity: .8;
+}
+
+.card.bitem .shot .shot_empty span {
+  font-size: .86em;
+  font-weight: 600;
+}
+
+.card.bitem .shot .shot_empty small {
+  font-size: .72em;
+  opacity: .8;
+}
+
+.card.bitem .shot.has .shot_empty {
+  display: none;
+}
+
+.card.bitem .shot .shot_del,
+.card.bitem .shot .shot_edit {
+  display: none;
+  position: absolute;
+  border: none;
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  transition: background .2s;
+}
+
+.card.bitem .shot .shot_del {
+  top: .45em;
+  right: .45em;
+  align-items: center;
+  justify-content: center;
+  width: 2em;
+  height: 2em;
+  border-radius: 50%;
+  padding: 0;
+}
+
+.card.bitem .shot .shot_del .material-icons {
+  font-size: 16px;
+  margin: 0;
+}
+
+.card.bitem .shot .shot_edit {
+  right: .45em;
+  bottom: .45em;
+  align-items: center;
+  padding: .3em .65em;
+  border-radius: 2px;
+  font-size: .76em;
+}
+
+.card.bitem .shot.has .shot_del,
+.card.bitem .shot.has .shot_edit {
+  display: inline-flex;
+}
+
+.card.bitem .shot .shot_del:hover,
+.card.bitem .shot .shot_edit:hover {
+  background: rgba(0, 0, 0, .8);
+}
+
+.card.bitem .shot .shot_busy {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, .82);
+  color: rgba(0, 0, 0, .6);
+  font-size: .85em;
+}
+
+.card.bitem .shot.busy .shot_busy {
+  display: flex;
+}
+
+.card.bitem .file_in {
+  display: none !important;
+}
+
+/* 사진 크게 보기 */
+.shot_zoom {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2em;
+  background: rgba(0, 0, 0, .74);
+  cursor: zoom-out;
+  animation: zoom_in .2s ease-out;
+}
+
+.shot_zoom img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 3px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
+  opacity: 1 !important;
+}
+
+@keyframes zoom_in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---------- 메모 ---------- */
+
+.card.bitem .memo_wrap {
+  display: flex;
+  flex-direction: column;
+  gap: .35em;
+  cursor: text;
+}
+
+.card.bitem .memo_label {
+  display: flex;
+  align-items: center;
+  gap: .2em;
+  font-size: .76em;
+  letter-spacing: .04em;
+  color: rgba(0, 0, 0, .45);
+}
+
+.card.bitem .memo_label .material-icons {
+  font-size: 15px;
+  margin: 0;
+}
+
+.card.bitem .memo_state {
+  margin-left: auto;
+  font-size: .92em;
+  color: var(--color-600);
+  opacity: 0;
+  transition: opacity .35s;
+}
+
+.card.bitem .memo_state.on {
+  opacity: 1;
+}
+
+.card.bitem .memo {
+  display: block;
+  width: 100%;
+  min-height: 4.8em;
+  max-height: 40vh;
+  padding: .6em .7em;
+  border: 1px solid rgba(0, 0, 0, .14);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, .022);
+  color: rgba(0, 0, 0, .82);
+  font: inherit;
+  font-size: .9em;
+  line-height: 1.6;
+  text-align: left;
+  resize: none;
+  overflow-y: hidden;
+  cursor: text;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+}
+
+.card.bitem .memo::placeholder {
+  color: rgba(0, 0, 0, .3);
+}
+
+.card.bitem .memo:focus {
+  outline: none;
+  border-color: var(--color-500);
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--color-a100);
+}
+
+.card.bitem .acts {
+  margin-top: 0;
+}
+
+/* ---------- 관리 패널 보조 줄 ---------- */
+
+#manage .m_sub {
+  flex: 1 0 100%;
+  margin-top: .35em;
+  font-size: .85em;
+  color: rgba(0, 0, 0, .5);
+}
+
+/* ---------- 좁은 화면 ---------- */
+
+@media (max-width: 700px) {
+  .card.bitem .back>.bin {
+    gap: .65em;
+    padding: .9em;
+  }
+
+  .card.bitem .shot .shot_img {
+    max-height: 62vw;
+  }
+
+  /* iOS 는 16px 보다 작은 입력칸을 누르면 화면을 확대한다. */
+  .card.bitem .memo {
+    font-size: 16px;
+    min-height: 5.2em;
+  }
+
+  .card.bitem .shot .shot_edit {
+    font-size: .8em;
+    padding: .35em .7em;
+  }
+}
+
+/* ---------- 어두운 화면 ---------- */
+
+@media (prefers-color-scheme: dark) {
+  .card.bitem .back .b_desc {
+    color: rgba(255, 255, 255, .55);
+  }
+
+  .b_head .b_flip {
+    color: rgba(255, 255, 255, .45);
+  }
+
+  .b_head .b_flip:hover {
+    background: rgba(255, 255, 255, .1);
+    color: #fff;
+  }
+
+  .card.bitem .shot {
+    border-color: rgba(255, 255, 255, .16);
+    background: rgba(255, 255, 255, .04);
+  }
+
+  .card.bitem .shot .shot_empty {
+    color: rgba(255, 255, 255, .45);
+  }
+
+  .card.bitem .shot .shot_empty:hover {
+    background: rgba(255, 255, 255, .06);
+    color: rgba(255, 255, 255, .75);
+  }
+
+  .card.bitem .shot .shot_busy {
+    background: rgba(30, 30, 30, .85);
+    color: rgba(255, 255, 255, .7);
+  }
+
+  .card.bitem .memo_label {
+    color: rgba(255, 255, 255, .48);
+  }
+
+  .card.bitem .memo {
+    border-color: rgba(255, 255, 255, .18);
+    background: rgba(255, 255, 255, .04);
+    color: rgba(255, 255, 255, .85);
+  }
+
+  .card.bitem .memo::placeholder {
+    color: rgba(255, 255, 255, .3);
+  }
+
+  .card.bitem .memo:focus {
+    background: rgba(255, 255, 255, .07);
+    border-color: var(--color-400);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, .06);
+  }
+
+  #manage .m_sub {
+    color: rgba(255, 255, 255, .5);
+  }
+}

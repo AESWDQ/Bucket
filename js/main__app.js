@@ -28,7 +28,9 @@ var BUCKET = (function () {
 
   function inList(list, v) { return list.indexOf(v) !== -1; }
 
-  function blank() { return { done: {}, fail: [], deleted: [], added: [] }; }
+  function memoOf(id) { return state.memo[id] || ""; }
+
+  function blank() { return { done: {}, fail: [], deleted: [], added: [], memo: {} }; }
 
   function load() {
     var raw = null;
@@ -39,6 +41,7 @@ var BUCKET = (function () {
       s.fail = raw.fail || [];
       s.deleted = raw.deleted || [];
       s.added = raw.added || [];
+      s.memo = raw.memo || {};
     } else {
       /* 처음 방문: 데이터에 날짜가 적힌 항목만 달성으로 시작한다. */
       DATA.categories.forEach(function (c) {
@@ -84,17 +87,42 @@ var BUCKET = (function () {
           '<dt>' +
             '<i class="tick material-icons" title="달성 표시">check_box_outline_blank</i>' +
             '<span class="tt">' + esc(it.t) + '</span>' +
+            '<span class="marks" aria-hidden="true">' +
+              '<i class="material-icons m_photo" title="사진이 있습니다">image</i>' +
+              '<i class="material-icons m_memo" title="메모가 있습니다">notes</i>' +
+            '</span>' +
           '</dt>' +
           '<dd>' + esc(it.d) + '<span class="date"></span></dd>' +
         '</dl>' +
         '<div class="back">' +
-          '<p class="back_title">' + esc(it.t) + '</p>' +
-          '<p class="ach_back"><i class="material-icons">military_tech</i>업적 · ' + esc(it.a || "-") + '</p>' +
-          (it.b ? '<p>' + esc(it.b) + '</p>' : '') +
-          '<div class="acts">' +
-            '<button class="act" data-act="done"><i class="material-icons">check_box</i><span>달성</span></button>' +
-            '<button class="act" data-act="fail"><i class="material-icons">flag</i><span>포기</span></button>' +
-            '<button class="act" data-act="del"><i class="material-icons">delete_outline</i><span>삭제</span></button>' +
+          '<div class="bin">' +
+            '<div class="b_head">' +
+              '<p class="back_title">' + esc(it.t) + '</p>' +
+              '<span class="b_flip" title="앞면으로 돌리기"><i class="material-icons">close</i></span>' +
+            '</div>' +
+            '<p class="ach_back"><i class="material-icons">military_tech</i>업적 · ' + esc(it.a || "-") + '</p>' +
+            (it.b ? '<p class="b_desc">' + esc(it.b) + '</p>' : '') +
+            '<div class="shot">' +
+              '<div class="shot_empty">' +
+                '<i class="material-icons">add_a_photo</i>' +
+                '<span>사진 넣기</span>' +
+                '<small>사진은 이 브라우저에 저장됩니다</small>' +
+              '</div>' +
+              '<img class="shot_img" alt="">' +
+              '<button type="button" class="shot_del" title="사진 지우기"><i class="material-icons">delete</i></button>' +
+              '<button type="button" class="shot_edit">바꾸기</button>' +
+              '<div class="shot_busy">사진 넣는 중…</div>' +
+            '</div>' +
+            '<input class="file_in" type="file" accept="image/*">' +
+            '<label class="memo_wrap">' +
+              '<span class="memo_label"><i class="material-icons">notes</i>메모<span class="memo_state">저장됨</span></span>' +
+              '<textarea class="memo" rows="3" placeholder="이 항목에 대한 기록 · 느낀 점 · 다음에 할 일">' + esc(memoOf(it.id)) + '</textarea>' +
+            '</label>' +
+            '<div class="acts">' +
+              '<button class="act" data-act="done"><i class="material-icons">check_box</i><span>달성</span></button>' +
+              '<button class="act" data-act="fail"><i class="material-icons">flag</i><span>포기</span></button>' +
+              '<button class="act" data-act="del"><i class="material-icons">delete_outline</i><span>삭제</span></button>' +
+            '</div>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -141,6 +169,7 @@ var BUCKET = (function () {
     $card.find("dd .date").text(done ? (state.done[id] || "") : "");
     $card.find(".ach").toggleClass("on", done);
     $card.find(".act[data-act=done] span").text(done ? "달성 해제" : "달성");
+    applyMarks($card);
   }
 
   function applyAll() { $(".bitem").each(function () { applyCard($(this)); }); }
@@ -417,6 +446,227 @@ var BUCKET = (function () {
     toast("삭제한 항목을 모두 되살렸습니다.", "restore");
   }
 
+  /* ---------- 카드 뒤집기 · 사진 · 메모 ----------
+   *
+   * 카드를 누르면 뒤집혀서 뒷면이 보입니다. 뒷면에는 사진(IndexedDB)과 메모(localStorage)가
+   * 있습니다. 카드 높이는 뒤집힌 동안에만 뒷면 높이에 맞춰 키우고, 그만큼 그리드를 다시
+   * 배치해 아래 카드를 밀어냅니다. (앞면·뒷면은 같은 자리에서 3D 로 돌아갑니다.)
+   */
+
+  var photoIds = {};      // 사진이 있는 카드 id
+  var photoURLs = {};     // id -> objectURL (한 번 만든 것은 다시 쓴다)
+  var memoTimer = null;
+
+  function applyMarks($card) {
+    var id = $card.attr("data-id");
+    if (!id) return;
+    $card.toggleClass("has_photo", !!photoIds[id]);
+    $card.toggleClass("has_memo", !!(state.memo[id] && state.memo[id].replace(/\s/g, "")));
+  }
+
+  function saveMemoSoon() {
+    clearTimeout(memoTimer);
+    memoTimer = setTimeout(function () {
+      memoTimer = null;
+      save();
+      notifySaved();
+    }, 350);
+  }
+
+  function flushMemo() {
+    if (memoTimer) { clearTimeout(memoTimer); memoTimer = null; }
+    save();
+    notifySaved();
+  }
+
+  function notifySaved() {
+    $(".memo_state.on").each(function () {
+      var $s = $(this);
+      $s.text("저장됨");
+      clearTimeout($s.data("t"));
+      $s.data("t", setTimeout(function () { $s.removeClass("on"); }, 1300));
+    });
+  }
+
+  function fitCard($card) {
+    if (!$card.hasClass("flipped")) {
+      if ($card.attr("style") && $card.css("height") !== "auto") $card.css("height", "");
+      return;
+    }
+    var $front = $card.children(".front");
+    var $back = $card.children(".back");
+    var h = Math.max(
+      $front.length ? $front[0].offsetHeight : 0,
+      $back.length ? $back[0].offsetHeight : 0
+    );
+    if (h > 0 && Math.abs(($card[0].offsetHeight || 0) - h) > 1) $card.css("height", h + "px");
+  }
+
+  function relayout($card) {
+    var $sec = $card.closest("section.sub");
+    if ($sec.length && $sec.data("masonry")) {
+      try { $sec.masonry("layout"); } catch (e) {}
+    }
+    if (typeof trim_contents_headline === "function") trim_contents_headline();
+  }
+
+  function refit($card) { fitCard($card); relayout($card); }
+
+  function openCard($card) {
+    if ($card.hasClass("flipped")) return;
+    $card.addClass("flipped");
+    refit($card);
+    fillPhoto($card).then(function () {
+      refit($card);
+      revealCard($card);
+    });
+  }
+
+  /* 펼친 카드가 화면 밖으로 넘치면 보이는 자리까지 부드럽게 내려 준다. */
+  function revealCard($card) {
+    var el = $card[0];
+    if (!el || !el.getBoundingClientRect) return;
+    var rect = el.getBoundingClientRect();
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    var topPad = ($("header").outerHeight() || 0) + ($("#sub_header").outerHeight() || 0) + 14;
+    if (rect.bottom <= vh - 16 && rect.top >= topPad) return;
+    var y = window.pageYOffset + rect.top - topPad;
+    try { window.scrollTo({ top: Math.max(0, y), behavior: "smooth" }); }
+    catch (e) { window.scrollTo(0, Math.max(0, y)); }
+  }
+
+  function closeCard($card) {
+    if (!$card.hasClass("flipped")) return;
+    var active = document.activeElement;
+    if (active && $card[0].contains(active) && active.blur) active.blur();
+    $card.removeClass("flipped").css("height", "");
+    relayout($card);
+  }
+
+  function toggleCard($card) {
+    if ($card.hasClass("flipped")) closeCard($card); else openCard($card);
+  }
+
+  function setShot($card, url) {
+    var $shot = $card.find(".shot");
+    var img = $shot.find(".shot_img")[0];
+    if (!img) return;
+    img.onload = function () { if ($card.hasClass("flipped")) refit($card); };
+    img.src = url;
+    $shot.addClass("has");
+  }
+
+  function imageReady(img) {
+    if (!img) return Promise.resolve();
+    if (img.complete && img.naturalHeight) return Promise.resolve();
+    return new Promise(function (resolve) {
+      var done = false;
+      function finish() {
+        if (done) return;
+        done = true;
+        resolve();
+      }
+      img.addEventListener("load", finish, { once: true });
+      img.addEventListener("error", finish, { once: true });
+      setTimeout(finish, 4000);
+    });
+  }
+
+  function fillPhoto($card) {
+    var id = $card.attr("data-id");
+    if (!id || !photoIds[id]) return Promise.resolve();
+    var $shot = $card.find(".shot");
+    if (!$shot.length) return Promise.resolve();
+    var img = $shot.find(".shot_img")[0];
+    if ($shot.attr("data-for") === id) return imageReady(img);
+    return PHOTO.get(id).then(function (blob) {
+      if (!blob) { delete photoIds[id]; $card.removeClass("has_photo"); return; }
+      var url = photoURLs[id];
+      if (!url) { url = URL.createObjectURL(blob); photoURLs[id] = url; }
+      $shot.attr("data-for", id);
+      setShot($card, url);
+      return imageReady(img);
+    }).catch(function () {});
+  }
+
+  function pickPhoto($card) {
+    var $in = $card.find(".file_in");
+    if (!$in.length) return;
+    $in.val("");
+    $in[0].click();
+  }
+
+  function onPhotoChosen($card, input) {
+    var file = input.files && input.files[0];
+    input.value = "";
+    if (!file) return;
+    var id = $card.attr("data-id");
+    var $shot = $card.find(".shot");
+    if (!id || !$shot.length) return;
+    if (file.size > 30 * 1024 * 1024) {
+      toast("사진이 너무 큽니다. 30MB 이하로 넣어 주세요.", "priority_high");
+      return;
+    }
+    $shot.addClass("busy");
+    PHOTO.compress(file).then(function (out) {
+      return PHOTO.put(id, out.blob).then(function (res) {
+        photoIds[id] = true;
+        if (photoURLs[id]) URL.revokeObjectURL(photoURLs[id]);
+        photoURLs[id] = URL.createObjectURL(out.blob);
+        $shot.attr("data-for", id).removeClass("busy");
+        setShot($card, photoURLs[id]);
+        $card.addClass("has_photo");
+        refit($card);
+        if (res && res.stored === false) toast("사진을 이번 화면에만 넣었습니다. 새로고침하면 사라집니다.", "priority_high");
+        else toast("사진을 넣었습니다.", "image");
+      });
+    }).catch(function (err) {
+      $shot.removeClass("busy");
+      toast((err && err.message) ? err.message : "사진을 넣지 못했습니다.", "priority_high");
+    });
+  }
+
+  function removePhoto($card) {
+    var id = $card.attr("data-id");
+    var $shot = $card.find(".shot");
+    $shot.removeClass("has busy").removeAttr("data-for");
+    $shot.find(".shot_img").removeAttr("src");
+    delete photoIds[id];
+    if (photoURLs[id]) { URL.revokeObjectURL(photoURLs[id]); delete photoURLs[id]; }
+    $card.removeClass("has_photo");
+    PHOTO.del(id);
+    refit($card);
+    toast("사진을 지웠습니다.", "delete_outline");
+  }
+
+  function zoomPhoto($card) {
+    var url = photoURLs[$card.attr("data-id")];
+    if (!url) return;
+    $(".shot_zoom").remove();
+    var $z = $('<div class="shot_zoom" title="누르면 닫힙니다"><img alt=""></div>');
+    $z.find("img").attr("src", url);
+    $z.on("click", function () { $(this).remove(); });
+    $("body").append($z);
+  }
+
+  function autoGrow(el) {
+    var max = Math.round(window.innerHeight * 0.4);
+    var before = el.offsetHeight;
+    el.style.height = "auto";
+    var h = Math.min(el.scrollHeight, max);
+    el.style.height = h + "px";
+    el.style.overflowY = el.scrollHeight > max ? "auto" : "hidden";
+    return el.offsetHeight !== before;
+  }
+
+  function initPhotos() {
+    PHOTO.warm();
+    PHOTO.keys().then(function (ids) {
+      ids.forEach(function (id) { photoIds[id] = true; });
+      $(".bitem").each(function () { applyMarks($(this)); });
+    }).catch(function () {});
+  }
+
   /* ---------- 관리 패널 ---------- */
 
   function openManage() {
@@ -435,7 +685,9 @@ var BUCKET = (function () {
     var r = rankOf(s.done);
     $("#m_summary").html(
       '<span class="m_big">' + s.done + "/" + s.total + '</span> 달성 · ' +
-      '업적 <b>' + s.done + '</b>개 · ' + esc(r.cur.name) + ' (Lv.' + r.cur.lv + ")"
+      '업적 <b>' + s.done + '</b>개 · ' + esc(r.cur.name) + ' (Lv.' + r.cur.lv + ')' +
+      '<div class="m_sub">사진 <b>' + Object.keys(photoIds).length + '</b>장 · 메모 <b>' +
+      Object.keys(state.memo).length + '</b>개</div>'
     );
 
     var dels = state.deleted.map(function (id) {
@@ -469,6 +721,72 @@ var BUCKET = (function () {
       if (act === "done") toggleDone(id);
       else if (act === "fail") toggleFail(id);
       else if (act === "del") removeItem(id);
+    });
+
+    /* 카드 뒤집기: 카드의 빈 자리를 누를 때만. 버튼·입력칸 등은 각자 stopPropagation 하거나
+     * 아래 목록에서 빼 둔다. */
+    var NO_FLIP = "input, textarea, button, select, label, a, .act, .tick, .ach, .shot, .memo, .memo_wrap, .b_flip";
+
+    $(document).on("click", ".card.bitem, .card.guide", function (e) {
+      if ($(e.target).closest(NO_FLIP).length) return;
+      toggleCard($(this));
+    });
+
+    $(document).on("click", ".b_flip", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeCard($(this).closest(".card"));
+    });
+
+    $(document).on("click", ".shot_empty, .shot_edit", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      pickPhoto($(this).closest(".card"));
+    });
+
+    $(document).on("click", ".shot_del", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      removePhoto($(this).closest(".card"));
+    });
+
+    $(document).on("click", ".shot_img", function (e) {
+      e.stopPropagation();
+      zoomPhoto($(this).closest(".card"));
+    });
+
+    $(document).on("change", ".file_in", function () {
+      onPhotoChosen($(this).closest(".card"), this);
+    });
+
+    $(document).on("input", ".bitem .memo", function () {
+      var $card = $(this).closest(".bitem");
+      var id = $card.attr("data-id");
+      var v = this.value;
+      if (v.replace(/\s/g, "")) state.memo[id] = v; else delete state.memo[id];
+      applyMarks($card);
+      $card.find(".memo_state").text("저장 중").addClass("on");
+      saveMemoSoon();
+      if (autoGrow(this) && $card.hasClass("flipped")) refit($card);
+    });
+
+    $(document).on("blur", ".bitem .memo", function () {
+      if (memoTimer) flushMemo();
+    });
+
+    $(document).on("click", ".shot_zoom", function () { $(this).remove(); });
+
+    /* 메모를 치다가 바로 창을 닫아도 마지막 글자가 남게. */
+    $(window).on("pagehide beforeunload", function () {
+      if (memoTimer) flushMemo();
+    });
+
+    var resizeTimer = null;
+    $(window).on("resize", function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        $(".card.flipped").each(function () { fitCard($(this)); });
+      }, 120);
     });
 
     $("#manage_bt").on("click", openManage);
@@ -516,7 +834,10 @@ var BUCKET = (function () {
     });
 
     $(document).on("keydown", function (e) {
-      if (e.key === "Escape") closeManage();
+      if (e.key === "Escape") {
+        if ($(".shot_zoom").length) { $(".shot_zoom").remove(); return; }
+        closeManage();
+      }
     });
   }
 
@@ -526,6 +847,7 @@ var BUCKET = (function () {
     init: function () {
       render();
       bind();
+      initPhotos();
       return this;
     },
     render: render,
