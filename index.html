@@ -6,19 +6,27 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="theme-color" content="#212121" />
-  <meta name="description" content="규연의 버킷리스트. 카드를 누르면 뒤집혀 사진과 메모를 남길 수 있는 플립 카드 버킷리스트." />
+  <meta name="description" content="규연의 버킷리스트. 달성한 기록과 사진, 메모를 모아 둔 공개 버킷리스트. 카드를 누르면 뒤집힙니다." />
   <meta property="og:title" content="규연의 버킷리스트" />
-  <meta property="og:description" content="BUCKET LIST by 규연 (@AESWDQ) — 126개의 퀘스트와 업적" />
+  <meta property="og:description" content="BUCKET LIST by 규연 (@AESWDQ) — 126개의 퀘스트와 업적, 그리고 달성한 기록" />
   <link rel="stylesheet" type="text/css" href="css/style.css">
   <link rel="stylesheet" type="text/css" href="css/style_rank.css">
   <link rel="stylesheet" type="text/css" href="css/style_dark.css">
   <link rel="stylesheet" type="text/css" href="css/style_memo.css">
+  <link rel="stylesheet" type="text/css" href="css/style_publish.css">
   <link rel="shortcut icon" href="img/favicon/favicon.ico">
   <script src="js/jquery.min.js"></script>
+  <script>
+    /* 공개 화면(기본)과 편집 모드(?edit=1). 화면이 그려지기 전에 정해 두어 깜빡이지 않게 한다.
+       자세한 처리는 js/main__app.js 의 mode() 가 한 번 더 맞춘다. */
+    document.documentElement.className += /(?:^|[?&])edit=1(?:&|$)/.test(location.search) ? " mode_edit" : " mode_public";
+  </script>
   <script defer src="js/sub__coloring.js"></script>
   <script defer src="data/bucket.js"></script>
+  <script defer src="js/main__published.js"></script>
   <script defer src="js/main__memory.js"></script>
   <script defer src="js/main__app.js"></script>
+  <script defer src="js/main__publish.js"></script>
   <script defer src="js/main__initialize.js"></script>
   <script defer src="js/sub__masonry.pkgd.min.js"></script>
   <script defer src="js/sub__clipboard.min.js"></script>
@@ -96,13 +104,16 @@
       <!-- 사용법 카드 -->
       <dl class="front" id="버킷리스트">
         <dt>읽는 법</dt>
-        <dd>카드를 눌러 뒤집고, 사진과 메모를 남기고, 업적을 모으는 곳<span class="date"></span></dd>
+        <dd><span class="public_only">카드를 눌러 뒤집으면 달성한 기록과 사진·메모를 볼 수 있습니다</span><span class="edit_only">카드를 눌러 뒤집고, 사진과 메모를 남기고, 업적을 모으는 곳</span><span class="date"></span></dd>
       </dl>
       <div class="back">
-        <p>만들었다, 버킷리스트! 이제 카드를 <b>누르면</b> 뒤집히고, 뒷면에 내 사진과 메모를 남길 수 있습니다. 뒤집힌 카드를 다시 누르면(또는 오른쪽 위 <b>×</b>) 원래대로 돌아갑니다.</p>
-        <p><b>사진</b>은 뒷면의 ‘사진 넣기’를 눌러 고릅니다. 긴 변 900px 로 줄여 이 브라우저(IndexedDB)에 저장하고, <b>메모</b>는 글자를 칠 때마다 자동으로 저장됩니다. 사진이나 메모가 있는 카드는 앞면 제목 옆에 작은 표시가 붙습니다.</p>
-        <p><b>달성</b>은 카드의 네모칸이나 업적 칭호를 누르면 됩니다. 카드 뒷면에서 <b>달성 · 포기 · 삭제</b>도 고를 수 있고, 지운 항목은 오른쪽 위 <b>관리</b>에서 되살릴 수 있습니다.</p>
-        <p>항목마다 업적 칭호가 하나씩 붙어 있습니다. 달성하면 회색 실루엣이 색으로 채워집니다. 위쪽 <b>Lv.</b> 배지는 달성 개수로 오르는 전체 칭호입니다.</p>
+        <p class="public_only">규연의 버킷리스트입니다. 카드를 <b>누르면</b> 뒤집혀서, 달성한 항목에 남긴 <b>사진과 메모</b>를 볼 수 있습니다. 뒤집힌 카드를 다시 누르면(또는 오른쪽 위 <b>×</b>) 원래대로 돌아갑니다.</p>
+        <p class="public_only">항목마다 업적 칭호가 하나씩 붙어 있습니다. 달성하면 회색 실루엣이 색으로 채워지고, 위쪽 <b>Lv.</b> 배지는 달성 개수로 오르는 전체 칭호입니다. 카테고리 제목 옆 칭호는 그 카테고리에서 모은 업적입니다.</p>
+        <p class="public_only">위쪽 <b>전체 · 달성 · 미달성 · 포기</b>로 골라 볼 수 있습니다.</p>
+        <p class="edit_only">만들었다, 버킷리스트! 이제 카드를 <b>누르면</b> 뒤집히고, 뒷면에 내 사진과 메모를 남길 수 있습니다. 뒤집힌 카드를 다시 누르면(또는 오른쪽 위 <b>×</b>) 원래대로 돌아갑니다.</p>
+        <p class="edit_only"><b>사진</b>은 뒷면의 ‘사진 넣기’를 눌러 고릅니다. 긴 변 900px 로 줄여 이 브라우저(IndexedDB)에 저장하고, <b>메모</b>는 글자를 칠 때마다 자동으로 저장됩니다. 사진이나 메모가 있는 카드는 앞면 제목 옆에 작은 표시가 붙습니다.</p>
+        <p class="edit_only"><b>달성</b>은 카드의 네모칸이나 업적 칭호를 누르면 됩니다. 카드 뒷면에서 <b>달성 · 포기 · 삭제</b>도 고를 수 있고, 지운 항목은 오른쪽 위 <b>관리</b>에서 되살릴 수 있습니다.</p>
+        <p class="edit_only">여기서 바꾼 것은 이 브라우저에만 저장됩니다. <b>관리 → 공개용 내보내기</b>로 받은 zip 을 성원에게 보내면 공개 페이지에 반영됩니다.</p>
       </div>
     </div>
   </section>
@@ -116,7 +127,18 @@
   <footer>
     <p class="copyright">© <span id="year"></span> 규연 (@AESWDQ)</p>
     <p class="copyright" style="padding-top:0; font-size:.85em;">카드 디자인과 코드 원본: <a href="https://github.com/Admin0/bucket" target="_blank">BUCKET LIST by JinH</a></p>
+    <p class="copyright mode_switch">
+      <a class="public_only" id="to_edit" href="?edit=1">편집 모드</a>
+      <a class="edit_only" id="to_public" href="index.html">공개 화면으로 보기</a>
+    </p>
   </footer>
+
+  <!-- 편집 모드 안내 띠 (편집 모드에서만 보인다) -->
+  <div id="edit_bar" class="edit_only">
+    <i class="material-icons">edit</i>
+    <span>편집 모드 — 변경 후 JSON과 사진을 성원에게 보내면 공개 페이지에 반영됩니다</span>
+    <a class="bar_link" href="index.html">공개 화면 보기</a>
+  </div>
 
   <div id="tooltip"> </div>
 
@@ -153,6 +175,12 @@
       <input id="m_a" placeholder="업적 칭호 · 예: 파도의 주인" />
       <button id="m_add_bt">추가하기</button>
     </div>
+
+    <div class="setting_title">공개 페이지</div>
+    <div class="m_row">
+      <button id="m_publish">공개용 내보내기 (JSON + 사진)</button>
+    </div>
+    <p class="m_note">공개 페이지에는 여기서 표시한 <b>달성 · 포기 · 삭제</b>와 메모, 사진만 나갑니다. 받은 zip 을 성원에게 보내면 공개 페이지에 반영됩니다.</p>
 
     <div class="setting_title">데이터</div>
     <div class="m_row">

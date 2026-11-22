@@ -1,0 +1,15 @@
+{
+  "format": "bucket-published-v1",
+  "updated": "2026.11.22",
+  "owner": {
+    "name": "규연",
+    "handle": "AESWDQ"
+  },
+  "items": {
+    "mt01": {
+      "done": "2026.11.21"
+    }
+  },
+  "fail": [],
+  "added": []
+}

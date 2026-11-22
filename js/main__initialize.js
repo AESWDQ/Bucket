@@ -19,6 +19,14 @@ const contents = [{
 }];
 
 $(document).ready(function () {
+  /* 공개 기록(data/published.json)을 먼저 읽은 뒤 카드를 그린다.
+   * 공개 화면은 이 파일만 보고 그리고, 편집 모드도 사진 경로와 이어서 시작할 기록을 여기서 가져온다. */
+  const ready = (window.PUBLISHED ? PUBLISHED.load() : Promise.resolve());
+  ready.then(load_modules);
+  time.log("initialize: DOM is ready.");
+});
+
+function load_modules() {
   let pending = contents.length;
 
   $.each(contents, function (id, val) {
@@ -44,8 +52,7 @@ $(document).ready(function () {
       }
     });
   });
-  time.log("initialize: DOM is ready.");
-});
+}
 
 
 // boot

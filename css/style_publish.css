@@ -1,0 +1,239 @@
+/* 공개 화면 / 편집 모드
+ *
+ * 기본(공개, https://aeswdq.github.io/Bucket/): 규연 님이 공개한 기록만 읽기 전용으로 보여 준다.
+ * 편집 모드(?edit=1): 저장·추가·삭제 등 모든 조작이 열리고, 화면 아래에 안내 띠가 뜬다.
+ *
+ * 모드 클래스(mode_public / mode_edit)는 index.html 의 <head> 에서 html 에 바로 붙인다.
+ * 그래서 화면이 그려지기 전에 어느 쪽 요소를 감출지 정해져 깜빡이지 않는다.
+ */
+
+/* ---------- 모드별로 보이는 요소 ---------- */
+
+html.mode_public .edit_only {
+  display: none !important;
+}
+
+html.mode_edit .public_only {
+  display: none !important;
+}
+
+/* 공개 화면에서는 관리(tune) 버튼을 감춘다 — 항목 추가·삭제·내보내기는 편집 모드에서만. */
+html.mode_public #manage_bt {
+  display: none !important;
+}
+
+/* 공개 화면에서는 관리 버튼이 없으니 칭호 배지가 화면 끝에 붙지 않게 조금 띄운다. */
+html.mode_public #sub_header #rank_chip {
+  padding-right: 16px;
+}
+
+/* 공개 화면의 달성 네모칸과 업적 칭호는 누를 수 있는 버튼이 아니다.
+ * 누르면 아래 카드로 클릭이 지나가서 카드가 뒤집힌다. */
+html.mode_public .card.bitem .tick,
+html.mode_public .card.bitem .ach {
+  pointer-events: none;
+}
+
+/* 관리 패널의 입력칸이 좁은 화면에서 패널 밖으로 삐져나오던 것 */
+#manage .m_add input {
+  box-sizing: border-box;
+}
+
+/* ---------- 편집 모드 안내 띠 ---------- */
+
+#edit_bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: .5em;
+  padding: .55em 1em;
+  background: #ffca28;
+  color: #241a00;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, .18);
+  font-size: .82em;
+  line-height: 1.4;
+  text-align: left;
+}
+
+#edit_bar .material-icons {
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: 17px;
+}
+
+#edit_bar span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#edit_bar .bar_link {
+  flex: 0 0 auto;
+  padding: .25em .6em;
+  border: 1px solid rgba(36, 26, 0, .4);
+  border-radius: 2px;
+  color: #241a00;
+  font-size: .95em;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .2s;
+}
+
+#edit_bar .bar_link:hover {
+  background: rgba(255, 255, 255, .5);
+}
+
+/* 띠에 가리지 않게 본문 아래와 알림(#toast)을 띄운다. */
+html.mode_edit body {
+  padding-bottom: 6em !important;
+}
+
+html.mode_edit #toast {
+  bottom: calc(1em + 3.4em);
+}
+
+/* ---------- 카드 뒷면: 공개된 기록 ---------- */
+
+.card.bitem .b_done {
+  display: none;
+  align-items: center;
+  gap: .25em;
+  margin: 0;
+  color: var(--color-600);
+  font-size: .82em;
+}
+
+.card.bitem.is_done .b_done {
+  display: flex;
+}
+
+.card.bitem .b_done .material-icons {
+  margin: 0;
+  font-size: 15px;
+}
+
+/* 공개 화면의 메모: 입력칸이 아니라 읽는 글. */
+.card.bitem .memo_ro {
+  display: flex;
+  flex-direction: column;
+  gap: .3em;
+}
+
+.card.bitem .memo_ro .memo_label {
+  display: flex;
+  align-items: center;
+  gap: .2em;
+  color: rgba(0, 0, 0, .45);
+  font-size: .76em;
+  letter-spacing: .04em;
+}
+
+.card.bitem .memo_ro .memo_label .material-icons {
+  margin: 0;
+  font-size: 15px;
+}
+
+.card.bitem .memo_ro .memo_text {
+  margin: 0;
+  padding: .65em .8em;
+  border-left: 2px solid rgba(0, 0, 0, .16);
+  border-radius: 0 3px 3px 0;
+  background: rgba(0, 0, 0, .022);
+  color: rgba(0, 0, 0, .8);
+  font-size: .9em;
+  line-height: 1.65;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 공개 사진은 테두리 없이 사진만. */
+.card.bitem .shot.ro {
+  border: 0;
+  background: #111;
+}
+
+/* ---------- 바닥글: 모드 바꾸기 ---------- */
+
+footer .mode_switch {
+  padding-top: 0;
+  font-size: .82em;
+}
+
+footer .mode_switch a {
+  color: rgba(0, 0, 0, .4);
+  border-bottom: 1px dotted rgba(0, 0, 0, .28);
+  text-decoration: none;
+  transition: color .2s;
+}
+
+footer .mode_switch a:hover {
+  color: rgba(0, 0, 0, .72);
+}
+
+/* ---------- 좁은 화면 ---------- */
+
+@media (max-width: 700px) {
+  #edit_bar {
+    padding: .5em .8em;
+    font-size: .76em;
+    gap: .4em;
+  }
+
+  #edit_bar .material-icons {
+    display: none;
+  }
+
+  html.mode_edit body {
+    padding-bottom: 7em !important;
+  }
+
+  html.mode_edit #toast {
+    bottom: calc(1em + 4.6em);
+  }
+}
+
+/* ---------- 어두운 화면 ---------- */
+
+@media (prefers-color-scheme: dark) {
+  #edit_bar {
+    background: #4a3c00;
+    color: #ffd76e;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, .5);
+  }
+
+  #edit_bar .bar_link {
+    border-color: rgba(255, 215, 110, .45);
+    color: #ffd76e;
+  }
+
+  #edit_bar .bar_link:hover {
+    background: rgba(255, 215, 110, .16);
+  }
+
+  .card.bitem .b_done {
+    color: rgba(255, 255, 255, .6);
+  }
+
+  .card.bitem .memo_ro .memo_label {
+    color: rgba(255, 255, 255, .48);
+  }
+
+  .card.bitem .memo_ro .memo_text {
+    border-left-color: rgba(255, 255, 255, .22);
+    background: rgba(255, 255, 255, .05);
+    color: rgba(255, 255, 255, .85);
+  }
+
+  footer .mode_switch a {
+    color: rgba(255, 255, 255, .42);
+    border-bottom-color: rgba(255, 255, 255, .28);
+  }
+
+  footer .mode_switch a:hover {
+    color: rgba(255, 255, 255, .75);
+  }
+}

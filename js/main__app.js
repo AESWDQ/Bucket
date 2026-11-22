@@ -1,15 +1,24 @@
 /* 버킷리스트 앱: 카드 그리기, 업적 칭호, 전체 칭호(레벨), 달성/삭제 관리.
  *
+ * 화면은 두 가지 모드로 뜹니다.
+ *   공개(기본, https://aeswdq.github.io/Bucket/)
+ *     data/published.json 에 커밋된 기록만 읽기 전용으로 보여 줍니다. 저장소에 쓰지 않습니다.
+ *   편집(?edit=1)
+ *     지금까지처럼 localStorage("bucket.state.v1") · IndexedDB("bucket.photos.v1") 에 저장하고,
+ *     달성·포기·삭제·추가·메모·사진·내보내기가 모두 열립니다.
+ *
  * 내용은 data/bucket.js, 이 파일은 동작만 담당합니다.
- * 달성·실패·삭제·추가 기록은 이 브라우저의 localStorage("bucket.state.v1")에만 저장됩니다.
  */
 var BUCKET = (function () {
   "use strict";
 
   var KEY = "bucket.state.v1";
   var DATA = window.BUCKET_DATA;
-  var state = load();
+  var EDIT = mode();
+  var state = blank();        // init() 에서 load() 로 채운다 (공개 기록을 먼저 읽어야 해서)
+  var inited = false;
   var bound = false;
+  var pubPhoto = {};          // id -> 공개된 사진 경로 (img/memories/...)
 
   /* ---------- 작은 도구들 ---------- */
 
@@ -17,8 +26,11 @@ var BUCKET = (function () {
 
   function today() {
     var d = new Date();
-    return d.getFullYear() + "." + pad(d.getMonth() + 1) + "." + pad(d.getDate()) + ".";
+    return d.getFullYear() + "." + pad(d.getMonth() + 1) + "." + pad(d.getDate());
   }
+
+  /* 달성 날짜는 "2026.11.21" 모양으로 맞춘다 (예전 기록의 끝점은 뗀다). */
+  function cleanDate(v) { return String(v == null ? "" : v).replace(/\.\s*$/, ""); }
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -30,30 +42,73 @@ var BUCKET = (function () {
 
   function memoOf(id) { return state.memo[id] || ""; }
 
-  function blank() { return { done: {}, fail: [], deleted: [], added: [], memo: {} }; }
+  function blank() { return { done: {}, fail: [], deleted: [], added: [], memo: {}, photoDel: [] }; }
 
-  function load() {
+  /* 공개 화면(기본)과 편집 모드(?edit=1)를 가른다.
+   * index.html 의 <head> 에서도 같은 클래스를 붙이므로, 여기서는 한 번 더 맞추기만 한다. */
+  function mode() {
+    var edit = /(^|[?&])edit=1(&|$)/.test(location.search);
+    var cls = String(document.documentElement.className || "")
+      .replace(/\bmode_(edit|public)\b/g, "").replace(/\s+/g, " ").trim();
+    document.documentElement.className = (cls ? cls + " " : "") + (edit ? "mode_edit" : "mode_public");
+    return edit;
+  }
+
+  /* data/bucket.js 에 날짜가 적힌 항목 — 공개 기록을 못 읽었을 때의 바탕. */
+  function baseDone(s) {
+    DATA.categories.forEach(function (c) {
+      c.sections.forEach(function (sec) {
+        sec.items.forEach(function (it) { if (it.done) s.done[it.id] = cleanDate(it.done); });
+      });
+    });
+    return s;
+  }
+
+  /* 공개된 기록(달성 날짜·메모·포기)을 state 에 얹는다. */
+  function applyPublished(s) {
+    var p = window.PUBLISHED ? PUBLISHED.data() : null;
+    if (!p) return s;
+    Object.keys(p.items || {}).forEach(function (id) {
+      var it = p.items[id];
+      if (it.done) s.done[id] = cleanDate(it.done);
+      if (it.memo) s.memo[id] = it.memo;
+    });
+    s.fail = (p.fail || []).slice();
+    return s;
+  }
+
+  /* 편집 모드: 이 브라우저에 저장된 기록. 처음이면 공개된 기록에서 이어서 시작한다. */
+  function loadEdit() {
     var raw = null;
     try { raw = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { raw = null; }
     var s = blank();
     if (raw) {
       s.done = raw.done || {};
+      Object.keys(s.done).forEach(function (id) { s.done[id] = cleanDate(s.done[id]); });
       s.fail = raw.fail || [];
       s.deleted = raw.deleted || [];
       s.added = raw.added || [];
       s.memo = raw.memo || {};
+      s.photoDel = raw.photoDel || [];
     } else {
-      /* 처음 방문: 데이터에 날짜가 적힌 항목만 달성으로 시작한다. */
-      DATA.categories.forEach(function (c) {
-        c.sections.forEach(function (sec) {
-          sec.items.forEach(function (it) { if (it.done) s.done[it.id] = it.done; });
-        });
-      });
+      baseDone(s);
+      if (window.PUBLISHED && PUBLISHED.loaded()) applyPublished(s);
     }
     return s;
   }
 
+  /* 공개 화면: 저장소를 건드리지 않고 data/published.json 만 쓴다. */
+  function loadPublic() {
+    var s = blank();
+    if (window.PUBLISHED && PUBLISHED.loaded()) applyPublished(s);
+    else baseDone(s);   /* 공개 기록을 못 읽으면 리스트에 적힌 기본 달성만 */
+    return s;
+  }
+
+  function load() { return EDIT ? loadEdit() : loadPublic(); }
+
   function save() {
+    if (!EDIT) return;
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
   }
 
@@ -75,17 +130,68 @@ var BUCKET = (function () {
 
   /* ---------- 그리기 ---------- */
 
+  function hasPhoto(id) {
+    return !!photoIds[id] || (!inList(state.photoDel, id) && !!pubPhoto[id]);
+  }
+
   function cardHTML(it, catId) {
+    var id = it.id;
+    var memo = memoOf(id);
+    var photo = hasPhoto(id);
+    var tick = state.done[id] ? "check_box" : (inList(state.fail, id) ? "flag" : "check_box_outline_blank");
+
+    /* 사진 자리: 편집 모드에는 넣기·바꾸기·지우기가 붙고, 공개 화면에는 공개된 사진만 조용히 보인다. */
+    var shot = "";
+    if (EDIT) {
+      shot = '<div class="shot">' +
+              '<div class="shot_empty">' +
+                '<i class="material-icons">add_a_photo</i>' +
+                '<span>사진 넣기</span>' +
+                '<small>사진은 이 브라우저에 저장됩니다</small>' +
+              '</div>' +
+              '<img class="shot_img" alt="">' +
+              '<button type="button" class="shot_del" title="사진 지우기"><i class="material-icons">delete</i></button>' +
+              '<button type="button" class="shot_edit">바꾸기</button>' +
+              '<div class="shot_busy">사진 넣는 중…</div>' +
+            '</div>' +
+            '<input class="file_in" type="file" accept="image/*">';
+    } else if (photo) {
+      shot = '<div class="shot ro has" data-for="pub:' + esc(id) + '">' +
+              '<img class="shot_img" src="' + esc(pubPhoto[id] || "") + '" alt="' + esc(it.t) + ' 사진">' +
+            '</div>';
+    }
+
+    var memoHTML = "";
+    if (EDIT) {
+      memoHTML = '<label class="memo_wrap">' +
+          '<span class="memo_label"><i class="material-icons">notes</i>메모<span class="memo_state">저장됨</span></span>' +
+          '<textarea class="memo" rows="3" placeholder="이 항목에 대한 기록 · 느낀 점 · 다음에 할 일">' + esc(memo) + '</textarea>' +
+        '</label>';
+    } else if (memo.replace(/\s/g, "")) {
+      memoHTML = '<div class="memo_ro">' +
+          '<span class="memo_label"><i class="material-icons">notes</i>메모</span>' +
+          '<p class="memo_text">' + esc(memo) + '</p>' +
+        '</div>';
+    }
+
+    var acts = EDIT
+      ? '<div class="acts">' +
+          '<button class="act" data-act="done"><i class="material-icons">check_box</i><span>달성</span></button>' +
+          '<button class="act" data-act="fail"><i class="material-icons">flag</i><span>포기</span></button>' +
+          '<button class="act" data-act="del"><i class="material-icons">delete_outline</i><span>삭제</span></button>' +
+        '</div>'
+      : '';
+
     return '' +
-      '<div class="card bitem" data-id="' + esc(it.id) + '" data-cat="' + esc(catId) + '">' +
-        '<dl class="front" id="c_' + esc(it.id) + '">' +
-          '<div class="ach" title="업적 칭호: 달성하면 새겨집니다">' +
+      '<div class="card bitem" data-id="' + esc(id) + '" data-cat="' + esc(catId) + '">' +
+        '<dl class="front" id="c_' + esc(id) + '">' +
+          '<div class="ach" title="' + (EDIT ? "업적 칭호: 달성하면 새겨집니다" : "업적 칭호") + '">' +
             '<i class="material-icons">military_tech</i>' +
             '<span class="ach_tag">업적</span>' +
             '<span class="ach_name">' + esc(it.a || "이름 없는 업적") + '</span>' +
           '</div>' +
           '<dt>' +
-            '<i class="tick material-icons" title="달성 표시">check_box_outline_blank</i>' +
+            '<i class="tick material-icons" title="' + (EDIT ? "달성 표시" : "달성한 항목") + '">' + tick + '</i>' +
             '<span class="tt">' + esc(it.t) + '</span>' +
             '<span class="marks" aria-hidden="true">' +
               '<i class="material-icons m_photo" title="사진이 있습니다">image</i>' +
@@ -101,28 +207,11 @@ var BUCKET = (function () {
               '<span class="b_flip" title="앞면으로 돌리기"><i class="material-icons">close</i></span>' +
             '</div>' +
             '<p class="ach_back"><i class="material-icons">military_tech</i>업적 · ' + esc(it.a || "-") + '</p>' +
+            '<p class="b_done"><i class="material-icons">check_circle</i>달성<span class="b_done_date"></span></p>' +
             (it.b ? '<p class="b_desc">' + esc(it.b) + '</p>' : '') +
-            '<div class="shot">' +
-              '<div class="shot_empty">' +
-                '<i class="material-icons">add_a_photo</i>' +
-                '<span>사진 넣기</span>' +
-                '<small>사진은 이 브라우저에 저장됩니다</small>' +
-              '</div>' +
-              '<img class="shot_img" alt="">' +
-              '<button type="button" class="shot_del" title="사진 지우기"><i class="material-icons">delete</i></button>' +
-              '<button type="button" class="shot_edit">바꾸기</button>' +
-              '<div class="shot_busy">사진 넣는 중…</div>' +
-            '</div>' +
-            '<input class="file_in" type="file" accept="image/*">' +
-            '<label class="memo_wrap">' +
-              '<span class="memo_label"><i class="material-icons">notes</i>메모<span class="memo_state">저장됨</span></span>' +
-              '<textarea class="memo" rows="3" placeholder="이 항목에 대한 기록 · 느낀 점 · 다음에 할 일">' + esc(memoOf(it.id)) + '</textarea>' +
-            '</label>' +
-            '<div class="acts">' +
-              '<button class="act" data-act="done"><i class="material-icons">check_box</i><span>달성</span></button>' +
-              '<button class="act" data-act="fail"><i class="material-icons">flag</i><span>포기</span></button>' +
-              '<button class="act" data-act="del"><i class="material-icons">delete_outline</i><span>삭제</span></button>' +
-            '</div>' +
+            shot +
+            memoHTML +
+            acts +
           '</div>' +
         '</div>' +
       '</div>';
@@ -141,12 +230,15 @@ var BUCKET = (function () {
       cat.sections.forEach(function (sec) {
         h += '<h3 id="' + esc(sec.id) + '"><i class="material-icons">' + esc(sec.icon) + '</i><span>' + esc(sec.name) + '</span></h3>';
         h += '<section class="sub">';
-        sec.items.forEach(function (it) { if (!inList(state.deleted, it.id)) h += cardHTML(it, cat.id); });
+        sec.items.forEach(function (it) {
+          if (inList(state.deleted, it.id) || hiddenInPublic(it.id)) return;
+          h += cardHTML(it, cat.id);
+        });
         h += '</section>';
       });
-      var added = state.added.filter(function (a) { return a.cat === cat.id && !inList(state.deleted, a.id); });
+      var added = addedOf(cat.id);
       if (added.length) {
-        h += '<h3 id="added_' + esc(cat.id) + '"><i class="material-icons">add_circle_outline</i><span>내가 추가한 항목</span></h3>';
+        h += '<h3 id="added_' + esc(cat.id) + '"><i class="material-icons">add_circle_outline</i><span>' + (EDIT ? "내가 추가한 항목" : "직접 추가한 항목") + '</span></h3>';
         h += '<section class="sub">';
         added.forEach(function (it) { h += cardHTML(it, cat.id); });
         h += '</section>';
@@ -155,6 +247,19 @@ var BUCKET = (function () {
     });
     $("#contents").html(h);
     applyAll();
+  }
+
+  /* 이 카테고리에 보일 '내가 추가한 항목' — 편집 모드는 이 브라우저의 것, 공개 화면은 공개된 것. */
+  function addedOf(catId) {
+    var list = EDIT ? state.added : (window.PUBLISHED ? (PUBLISHED.data().added || []) : []);
+    return list.filter(function (a) { return a.cat === catId && !inList(state.deleted, a.id); });
+  }
+
+  /* 공개 화면에서 감춘 항목 (편집 모드에서 삭제한 것). */
+  function hiddenInPublic(id) {
+    if (EDIT) return false;
+    var p = window.PUBLISHED ? PUBLISHED.data() : null;
+    return !!(p && inList(p.hidden || [], id));
   }
 
   function applyCard($card) {
@@ -167,6 +272,7 @@ var BUCKET = (function () {
     if (fail) $dt.attr("failed", "failed"); else $dt.removeAttr("failed");
     $card.find("dt .tick").text(done ? "check_box" : (fail ? "flag" : "check_box_outline_blank"));
     $card.find("dd .date").text(done ? (state.done[id] || "") : "");
+    $card.find(".b_done_date").text(done ? " · " + (state.done[id] || "") : "");
     $card.find(".ach").toggleClass("on", done);
     $card.find(".act[data-act=done] span").text(done ? "달성 해제" : "달성");
     applyMarks($card);
@@ -416,6 +522,35 @@ var BUCKET = (function () {
     return id;
   }
 
+  /* 공개용 묶음(zip) 내보내기 — 편집 모드 전용. */
+  function exportPublish() {
+    if (typeof PUBLISH === "undefined") {
+      toast("공개용 내보내기를 쓸 수 없습니다.", "priority_high");
+      return;
+    }
+    var $b = $("#m_publish");
+    var label = "공개용 내보내기 (JSON + 사진)";
+    if ($b.hasClass("busy")) return;
+    $b.addClass("busy").text("묶는 중…");
+    PUBLISH.exportAll({
+      state: state,
+      data: DATA,
+      photoIds: Object.keys(photoIds),
+      photoDel: state.photoDel,
+      published: window.PUBLISHED ? PUBLISHED : null,
+      getPhoto: function (id) {
+        if (!photoIds[id]) return Promise.resolve(null);
+        return PHOTO.get(id).then(function (blob) { return blob || null; });
+      }
+    }).then(function (res) {
+      $b.removeClass("busy").text(label);
+      toast("공개용 묶음을 내려받았습니다 (사진 " + res.photos + "장). 성원에게 보내면 공개 페이지에 반영됩니다.", "publish");
+    }).catch(function () {
+      $b.removeClass("busy").text(label);
+      toast("묶음을 만들지 못했습니다. 다시 한 번 눌러 주세요.", "priority_high");
+    });
+  }
+
   function exportJSON() {
     var blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
     var url = URL.createObjectURL(blob);
@@ -460,7 +595,7 @@ var BUCKET = (function () {
   function applyMarks($card) {
     var id = $card.attr("data-id");
     if (!id) return;
-    $card.toggleClass("has_photo", !!photoIds[id]);
+    $card.toggleClass("has_photo", hasPhoto(id));
     $card.toggleClass("has_memo", !!(state.memo[id] && state.memo[id].replace(/\s/g, "")));
   }
 
@@ -574,16 +709,27 @@ var BUCKET = (function () {
 
   function fillPhoto($card) {
     var id = $card.attr("data-id");
-    if (!id || !photoIds[id]) return Promise.resolve();
     var $shot = $card.find(".shot");
-    if (!$shot.length) return Promise.resolve();
+    if (!id || !$shot.length) return Promise.resolve();
     var img = $shot.find(".shot_img")[0];
-    if ($shot.attr("data-for") === id) return imageReady(img);
+
+    /* 이 브라우저에 사진이 없으면 공개된 사진을 쓴다. */
+    if (!photoIds[id]) {
+      var path = inList(state.photoDel, id) ? "" : (pubPhoto[id] || "");
+      if (!path) return Promise.resolve();
+      var pubKey = "pub:" + id;
+      if ($shot.attr("data-for") === pubKey) return imageReady(img);
+      $shot.attr("data-for", pubKey);
+      setShot($card, path);
+      return imageReady(img);
+    }
+
+    if ($shot.attr("data-for") === "local:" + id) return imageReady(img);
     return PHOTO.get(id).then(function (blob) {
       if (!blob) { delete photoIds[id]; $card.removeClass("has_photo"); return; }
       var url = photoURLs[id];
       if (!url) { url = URL.createObjectURL(blob); photoURLs[id] = url; }
-      $shot.attr("data-for", id);
+      $shot.attr("data-for", "local:" + id);
       setShot($card, url);
       return imageReady(img);
     }).catch(function () {});
@@ -611,9 +757,11 @@ var BUCKET = (function () {
     PHOTO.compress(file).then(function (out) {
       return PHOTO.put(id, out.blob).then(function (res) {
         photoIds[id] = true;
+        state.photoDel = state.photoDel.filter(function (x) { return x !== id; });
+        save();
         if (photoURLs[id]) URL.revokeObjectURL(photoURLs[id]);
         photoURLs[id] = URL.createObjectURL(out.blob);
-        $shot.attr("data-for", id).removeClass("busy");
+        $shot.attr("data-for", "local:" + id).removeClass("busy");
         setShot($card, photoURLs[id]);
         $card.addClass("has_photo");
         refit($card);
@@ -633,14 +781,18 @@ var BUCKET = (function () {
     $shot.find(".shot_img").removeAttr("src");
     delete photoIds[id];
     if (photoURLs[id]) { URL.revokeObjectURL(photoURLs[id]); delete photoURLs[id]; }
+    /* 공개된 사진이면 '공개 목록에서 뺀다'는 표시를 남긴다 (다음 공개용 내보내기에 반영). */
+    if (!inList(state.photoDel, id)) state.photoDel.push(id);
     $card.removeClass("has_photo");
     PHOTO.del(id);
+    save();
     refit($card);
     toast("사진을 지웠습니다.", "delete_outline");
   }
 
   function zoomPhoto($card) {
-    var url = photoURLs[$card.attr("data-id")];
+    var id = $card.attr("data-id");
+    var url = photoURLs[id] || (inList(state.photoDel, id) ? "" : (pubPhoto[id] || ""));
     if (!url) return;
     $(".shot_zoom").remove();
     var $z = $('<div class="shot_zoom" title="누르면 닫힙니다"><img alt=""></div>');
@@ -660,11 +812,28 @@ var BUCKET = (function () {
   }
 
   function initPhotos() {
+    /* 공개 화면은 이 브라우저의 사진 저장소(IndexedDB)를 열지 않는다. */
+    if (!EDIT) {
+      $(".bitem").each(function () { applyMarks($(this)); });
+      return;
+    }
+
     PHOTO.warm();
     PHOTO.keys().then(function (ids) {
       ids.forEach(function (id) { photoIds[id] = true; });
       $(".bitem").each(function () { applyMarks($(this)); });
     }).catch(function () {});
+  }
+
+  /* data/published.json 이 가리키는 사진 경로 — 카드를 그리기 전에 알아야 한다. */
+  function readPublishedPhotos() {
+    pubPhoto = {};
+    var p = window.PUBLISHED ? PUBLISHED.data() : null;
+    if (p && p.items) {
+      Object.keys(p.items).forEach(function (id) {
+        if (p.items[id].photo) pubPhoto[id] = p.items[id].photo;
+      });
+    }
   }
 
   /* ---------- 관리 패널 ---------- */
@@ -683,11 +852,13 @@ var BUCKET = (function () {
   function fillManage() {
     var s = stats();
     var r = rankOf(s.done);
+    var pubCount = Object.keys(pubPhoto).filter(function (id) { return !inList(state.photoDel, id); }).length;
     $("#m_summary").html(
       '<span class="m_big">' + s.done + "/" + s.total + '</span> 달성 · ' +
       '업적 <b>' + s.done + '</b>개 · ' + esc(r.cur.name) + ' (Lv.' + r.cur.lv + ')' +
-      '<div class="m_sub">사진 <b>' + Object.keys(photoIds).length + '</b>장 · 메모 <b>' +
-      Object.keys(state.memo).length + '</b>개</div>'
+      '<div class="m_sub">사진 <b>' + Object.keys(photoIds).length + '</b>장' +
+      (pubCount ? ' (공개 ' + pubCount + '장)' : '') +
+      ' · 메모 <b>' + Object.keys(state.memo).length + '</b>개</div>'
     );
 
     var dels = state.deleted.map(function (id) {
@@ -707,6 +878,47 @@ var BUCKET = (function () {
     if (bound) return;
     bound = true;
 
+    /* 카드 뒤집기: 카드의 빈 자리를 누를 때만. 버튼·입력칸 등은 각자 stopPropagation 하거나
+     * 아래 목록에서 빼 둔다. */
+    var NO_FLIP = "input, textarea, button, select, label, a, .act, .tick, .ach, .shot, .memo, .memo_wrap, .memo_ro, .b_flip";
+
+    $(document).on("click", ".card.bitem, .card.guide", function (e) {
+      if ($(e.target).closest(NO_FLIP).length) return;
+      toggleCard($(this));
+    });
+
+    $(document).on("click", ".b_flip", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeCard($(this).closest(".card"));
+    });
+
+    $(document).on("click", ".shot_img", function (e) {
+      e.stopPropagation();
+      zoomPhoto($(this).closest(".card"));
+    });
+
+    $(document).on("click", ".shot_zoom", function () { $(this).remove(); });
+
+    $(document).on("keydown", function (e) {
+      if (e.key === "Escape" && $(".shot_zoom").length) $(".shot_zoom").remove();
+    });
+
+    $(document).on("click", "#rank_chip", function () {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    var resizeTimer = null;
+    $(window).on("resize", function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        $(".card.flipped").each(function () { fitCard($(this)); });
+      }, 120);
+    });
+
+    /* ---------- 여기서부터는 기록을 바꾸는 것들. 편집 모드에서만 붙인다. ---------- */
+    if (!EDIT) return;
+
     $(document).on("click", ".bitem .tick, .bitem .ach", function (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -723,21 +935,6 @@ var BUCKET = (function () {
       else if (act === "del") removeItem(id);
     });
 
-    /* 카드 뒤집기: 카드의 빈 자리를 누를 때만. 버튼·입력칸 등은 각자 stopPropagation 하거나
-     * 아래 목록에서 빼 둔다. */
-    var NO_FLIP = "input, textarea, button, select, label, a, .act, .tick, .ach, .shot, .memo, .memo_wrap, .b_flip";
-
-    $(document).on("click", ".card.bitem, .card.guide", function (e) {
-      if ($(e.target).closest(NO_FLIP).length) return;
-      toggleCard($(this));
-    });
-
-    $(document).on("click", ".b_flip", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      closeCard($(this).closest(".card"));
-    });
-
     $(document).on("click", ".shot_empty, .shot_edit", function (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -748,11 +945,6 @@ var BUCKET = (function () {
       e.preventDefault();
       e.stopPropagation();
       removePhoto($(this).closest(".card"));
-    });
-
-    $(document).on("click", ".shot_img", function (e) {
-      e.stopPropagation();
-      zoomPhoto($(this).closest(".card"));
     });
 
     $(document).on("change", ".file_in", function () {
@@ -774,26 +966,16 @@ var BUCKET = (function () {
       if (memoTimer) flushMemo();
     });
 
-    $(document).on("click", ".shot_zoom", function () { $(this).remove(); });
-
     /* 메모를 치다가 바로 창을 닫아도 마지막 글자가 남게. */
     $(window).on("pagehide beforeunload", function () {
       if (memoTimer) flushMemo();
     });
 
-    var resizeTimer = null;
-    $(window).on("resize", function () {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(function () {
-        $(".card.flipped").each(function () { fitCard($(this)); });
-      }, 120);
-    });
-
     $("#manage_bt").on("click", openManage);
-    $("#rank_chip").on("click", function () { window.scrollTo({ top: 0, behavior: "smooth" }); });
 
     $("#m_restore_all_bt").on("click", resetDeleted);
     $("#m_export").on("click", exportJSON);
+    $("#m_publish").on("click", exportPublish);
     $("#m_reset_prog").on("click", function () {
       var $b = $(this);
       if (!$b.hasClass("armed")) {
@@ -834,10 +1016,7 @@ var BUCKET = (function () {
     });
 
     $(document).on("keydown", function (e) {
-      if (e.key === "Escape") {
-        if ($(".shot_zoom").length) { $(".shot_zoom").remove(); return; }
-        closeManage();
-      }
+      if (e.key === "Escape") closeManage();
     });
   }
 
@@ -845,6 +1024,11 @@ var BUCKET = (function () {
 
   return {
     init: function () {
+      if (!inited) {
+        readPublishedPhotos();
+        state = load();
+        inited = true;
+      }
       render();
       bind();
       initPhotos();
@@ -855,7 +1039,9 @@ var BUCKET = (function () {
     bind: bind,
     stats: stats,
     state: function () { return state; },
+    editMode: function () { return EDIT; },
     resetProgress: resetProgress,
-    exportJSON: exportJSON
+    exportJSON: exportJSON,
+    exportPublish: exportPublish
   };
 })();

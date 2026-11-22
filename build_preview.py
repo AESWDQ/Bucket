@@ -27,9 +27,17 @@ for name in names:
     with open(os.path.join(root, "module", name + ".html"), encoding="utf-8") as f:
         pages[name] = f.read()
 
+# 공개 기록(data/published.json)도 파일 안에 넣어 둔다. 파일을 그대로 열면 fetch 가 막히기 때문.
+published_path = os.path.join(root, "data/published.json")
+published = {}
+if os.path.exists(published_path):
+    with open(published_path, encoding="utf-8") as f:
+        published = json.load(f)
+
 shim = """
   <script>
     /* 미리보기 전용: module/*.html 을 읽지 않고 미리 넣어 둔 내용을 돌려줍니다. */
+    window.BUCKET_PUBLISHED_PRELOAD = %s;
     const PAGES = %s;
     const jq_get = $.get;
     $.get = function (url) {
@@ -43,7 +51,7 @@ shim = """
       return jq_get.apply(this, arguments);
     };
   </script>
-""" % json.dumps(pages, ensure_ascii=False, indent=0)
+""" % (json.dumps(published, ensure_ascii=False, indent=0), json.dumps(pages, ensure_ascii=False, indent=0))
 
 target = '  <script defer src="js/main__initialize.js"></script>'
 if target not in index:
