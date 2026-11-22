@@ -77,11 +77,14 @@ function boot() {
     // 통계·칭호·업적 수치를 한 번 더 맞춘다 (info.js가 먼저 계산한 뒤)
     if (window.BUCKET) BUCKET.refresh();
 
-    $(window).on('load', function() { //not document, but window
+    /* load 가 이미 지난 뒤(스크립트가 늦게 붙었을 때)에도 한 번은 맞춰 준다. */
+    function after_load() {
       columns();
       trim_contents_headline();
       scroll_at_open();
-    });
+    }
+    if (document.readyState === "complete") after_load();
+    else $(window).on('load', after_load);
 
   });
 }

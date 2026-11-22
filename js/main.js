@@ -378,17 +378,21 @@ function scroll_smooth() {
 }
 
 function scroll_at_open() {
-  if (window.location.href.substring(window.location.href.length - 8, window.location.href.length) != window.location.pathname.substring(window.location.pathname.length - 8, window.location.pathname.length)) {
-    setTimeout(function() {
-      var target_pre = window.location.href.substring(window.location.href.indexOf("#"));
-      var target = (target_pre.substring(1, 2) == "%" ? $(decodeURIComponent(target_pre)) : $(target_pre));
-      // console.log(target.prop("tagName"));
-      $('html, body').animate({
-        scrollTop: target.offset().top - $('header').height() - $('#sub_header').height() - 12 - (localStorage.setting__stat == "true" ? 208 : 0) //116 - dashboard
-      }, 500);
-      target.addClass('on');
-    }, 1000)
-  }
+  /* 주소에 #항목 이 붙어 있을 때만 그 자리로 내려간다.
+   * (?edit=1 처럼 물음표만 있는 주소에서는 아무것도 하지 않는다 — 예전에는 주소 전체를
+   *  선택자로 넘겨 jQuery 오류가 났다.) */
+  var hash = window.location.hash;
+  if (!hash || hash.length < 2) return;
+  setTimeout(function () {
+    var sel = hash.indexOf("%") !== -1 ? decodeURIComponent(hash) : hash;
+    var target;
+    try { target = $(sel); } catch (e) { return; }
+    if (!target.length) return;
+    $('html, body').animate({
+      scrollTop: target.offset().top - $('header').height() - $('#sub_header').height() - 12 - (localStorage.setting__stat == "true" ? 208 : 0) //116 - dashboard
+    }, 500);
+    target.addClass('on');
+  }, 1000)
 }
 
 function title_tooltip() {
