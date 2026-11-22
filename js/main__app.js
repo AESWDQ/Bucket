@@ -92,7 +92,16 @@ var BUCKET = (function () {
       s.photoDel = raw.photoDel || [];
     } else {
       baseDone(s);
-      if (window.PUBLISHED && PUBLISHED.loaded()) applyPublished(s);
+      if (window.PUBLISHED && PUBLISHED.loaded()) {
+        /* 공개된 기록에서 이어서 시작한다. 감춘 항목과 직접 추가한 항목도 그대로 들고 와야
+         * 다음 공개용 내보내기에서 빠지지 않는다. */
+        applyPublished(s);
+        var p = PUBLISHED.data();
+        s.deleted = (p.hidden || []).slice();
+        s.added = (p.added || []).map(function (it) {
+          return { id: it.id, cat: it.cat, t: it.t, d: it.d || "", a: it.a || "", b: it.b || "" };
+        });
+      }
     }
     return s;
   }
@@ -252,7 +261,9 @@ var BUCKET = (function () {
   /* 이 카테고리에 보일 '내가 추가한 항목' — 편집 모드는 이 브라우저의 것, 공개 화면은 공개된 것. */
   function addedOf(catId) {
     var list = EDIT ? state.added : (window.PUBLISHED ? (PUBLISHED.data().added || []) : []);
-    return list.filter(function (a) { return a.cat === catId && !inList(state.deleted, a.id); });
+    return list.filter(function (a) {
+      return a.cat === catId && !inList(state.deleted, a.id) && !hiddenInPublic(a.id);
+    });
   }
 
   /* 공개 화면에서 감춘 항목 (편집 모드에서 삭제한 것). */
